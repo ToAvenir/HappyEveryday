@@ -8,7 +8,7 @@ const weiduCupData = {
   //    "pyramid"     -> 新版：左侧「个人积分表」+ 右侧「8人从下到上晋级对阵图」
   //    "bracket"     -> 原版：16队/8队「左右双半区向中间汇聚对阵图」
   //    "coming-soon" -> 预告：「第一届微度杯 is coming soon」流光页
-  mode: "coming-soon",
+  mode: "pyramid",
 
   // 2. 默认外观主题（用户点击右上角按钮切换后也会记住选择）：
   //    "dark"  -> 深色外观
@@ -28,17 +28,26 @@ const weiduCupData = {
 
     // 左侧个人积分表（包含：姓名 name、个人积分 points、净胜球 goalDiff）
     standings: [
-      { name: "林知远", points: 18, goalDiff: 14 },
-      { name: "陈星河", points: 15, goalDiff: 9 },
-      { name: "周予安", points: 15, goalDiff: 6 },
-      { name: "陆景行", points: 12, goalDiff: 5 },
-      { name: "沈清晏", points: 10, goalDiff: 3 },
-      { name: "顾言深", points: 9,  goalDiff: 1 },
-      { name: "许嘉树", points: 7,  goalDiff: -2 },
-      { name: "江逾白", points: 6,  goalDiff: -4 },
-      { name: "宋怀瑾", points: 4,  goalDiff: -7 },
-      { name: "温知夏", points: 3,  goalDiff: -10 },
-      { name: "叶南洲", points: 1,  goalDiff: -15 }
+      { name: "郭  锐", points: 0, goalDiff: 0 },
+      { name: "柳冠豪", points: 0, goalDiff: 0 },
+      { name: "薛伟钊", points: 0, goalDiff: 0 },
+      { name: "李建翔", points: 0, goalDiff: 0 },
+      { name: "鲁建宇", points: 0, goalDiff: 0 },
+      { name: "张晨光", points: 0,  goalDiff: 0 },
+      { name: "段志刚", points: 0,  goalDiff: 0 },
+      { name: "韩智敏", points: 0,  goalDiff: 0 },
+      { name: "刘烨昊", points: 0,  goalDiff: 0 },
+      { name: "何梦洁", points: 0,  goalDiff: 0 },
+      { name: "王  哲", points: 0,  goalDiff: 0 },
+      { name: "任雨晴", points: 0,  goalDiff: 0 },
+      { name: "朱玥玖", points: 0,  goalDiff: 0 },
+      { name: "伍智帅", points: 0,  goalDiff: 0 },
+      { name: "勾陆昊", points: 0,  goalDiff: 0 },
+      { name: "孙子琛", points: 0,  goalDiff: 0 },
+      { name: "夏赣民", points: 0,  goalDiff: 0 },
+      { name: "王  玮", points: 0,  goalDiff: 0 },
+      { name: "范向阳", points: 0,  goalDiff: 0 },
+      { name: "王  宇", points: 0,  goalDiff: 0 }
     ],
 
     // 右侧从下到上晋级图的 8 位参赛姓名（仅需名字，无需图标）
