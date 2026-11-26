@@ -1,0 +1,65 @@
+#home-view[hidden], .reset-page[hidden] { display: none; }
+
+.site-nav-link, .reset-button, .reset-back {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid var(--reset-line);
+  border-radius: 9px;
+  background: var(--reset-surface);
+  color: var(--reset-ink);
+  font: 600 .875rem/1.35 var(--sans);
+  white-space: nowrap;
+}
+.site-nav-link {
+  min-height: 44px;
+  gap: 8px;
+  padding-inline: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e9ded0;
+  font-weight: 500;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+.site-nav-link::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d39e75;
+}
+.site-nav-link:hover, .site-nav-link:focus-visible {
+  border-color: #d39e7540;
+  background: #d39e7512;
+  color: #fff2e4;
+}
+.reset-button:hover, .reset-back:hover { border-color: var(--reset-accent); background: var(--reset-inset); }
+
+.reset-page { color-scheme: light; min-height: 100vh; color: var(--reset-ink); font: 1rem/1.55 var(--sans); }
+[data-reset-theme="dark"] .reset-page { color-scheme: dark; }
+.reset-page :focus-visible { outline-color: var(--reset-accent); }
+.reset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px max(20px, var(--gutter));
+  border-bottom: 1px solid var(--reset-line);
+  background: var(--public-glass);
+  backdrop-filter: blur(18px);
+}
+.reset-header .brand-name { filter: brightness(.18) saturate(.7); }
+[data-reset-theme="dark"] .reset-header .brand-name { filter: none; }
+.reset-header-actions { display: flex; gap: 8px; }
+.reset-header .reset-button, .reset-back { background: var(--public-glass); }
+.reset-header .reset-button:hover, .reset-back:hover { background: var(--reset-inset); }
+.reset-shell { max-width: 1340px; margin: 0 auto; padding: clamp(24px, 4.8vw, 62px) clamp(18px, 4vw, 62px) 64px; }
+
+@media (max-width: 680px) {
+  .site-nav-link { gap: 5px; padding-inline: 7px; font-size: .8125rem; }
+  .reset-header { padding-inline: 18px; }
+  .reset-header .brand-name { width: clamp(74px, 20vw, 96px); }
+  .reset-header .brand-mark { width: 24px; height: 24px; }
+  .reset-header-actions .reset-button, .reset-back { padding-inline: 10px; }
+}

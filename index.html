@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Happy everyday 的互动粒子开场、AI 模型重置记录与微度杯。">
+  <title>Happy everyday</title>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="happy-everyday-mark.png">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="particles.js"></script>
+  <script defer src="site.js"></script>
+  <script defer src="reset.js"></script>
+  <link rel="stylesheet" href="reset.css">
+  <link rel="stylesheet" href="reset-public.css">
+  <script defer src="reset-public-data.js"></script>
+  <script defer src="reset-announcements.js"></script>
+  <script defer src="reset-public.js"></script>
+</head>
+<body>
+  <div id="home-view">
+    <header class="site-header" id="top">
+      <a class="wordmark" href="#top" aria-label="Happy everyday，回到开场">
+        <img class="brand-mark" src="happy-everyday-mark.png" alt="" width="28" height="28">
+        <img class="brand-name" src="happyeveryday-nocturne.png" alt="Happy everyday" width="1690" height="291">
+      </a>
+      <nav class="site-nav" aria-label="网站导航">
+        <a class="site-nav-link reset-entry" href="#ai-reset">AI模型重置</a>
+        <a class="site-nav-link" href="weidu-cup.html">微度杯</a>
+      </nav>
+    </header>
+    <main class="opening" aria-labelledby="opening-title">
+      <div class="opening-stage particle-stage" id="opening-stage">
+        <canvas aria-hidden="true"></canvas>
+        <div class="opening-halo" aria-hidden="true"></div>
+      </div>
+      <h1 id="opening-title"><img src="happyeveryday-nocturne.png" alt="Happy everyday" width="1690" height="291"></h1>
+    </main>
+  </div>
+
+  <main class="reset-page" id="ai-reset" hidden aria-labelledby="reset-title">
+    <header class="reset-header">
+      <a class="wordmark" href="#top" aria-label="返回首页">
+        <img class="brand-mark" src="happy-everyday-mark.png" alt="" width="28" height="28">
+        <img class="brand-name" src="happyeveryday-nocturne.png" alt="" width="1690" height="291">
+      </a>
+      <div class="reset-header-actions">
+        <button type="button" class="reset-button reset-theme-button" id="reset-theme">深色模式</button>
+        <a class="reset-back" href="#top">返回首页</a>
+      </div>
+    </header>
+
+    <div class="reset-shell">
+      <h1 class="visually-hidden" id="reset-title" tabindex="-1">AI模型重置</h1>
+      <section class="public-overview" aria-label="公开重置概览">
+        <div id="public-reset-cards" class="public-cards"></div>
+      </section>
+      <section id="ai-reset-history" class="public-history" aria-labelledby="public-history-title">
+        <div class="public-heading">
+          <div>
+            <h2 id="public-history-title" tabindex="-1">公开重置历史</h2>
+            <p id="public-asof"></p>
+          </div>
+          <div class="public-segment" id="public-providers" role="group" aria-label="选择工具"></div>
+        </div>
+        <div class="public-calendar-panel">
+          <div class="public-calendar-header">
+            <h3 id="public-calendar-title"></h3>
+            <ul class="public-legend" aria-label="日历颜色">
+              <li><span class="public-color" data-kind="direct" aria-hidden="true"></span>直接重置</li>
+              <li><span class="public-color" data-kind="grant" aria-hidden="true"></span>发放重置卡</li>
+              <li><span class="public-color" aria-hidden="true"></span>未收录</li>
+            </ul>
+          </div>
+          <div class="public-calendar-scroll" tabindex="0" aria-label="年度重置日历，可横向滚动">
+            <div id="public-calendar-months" class="public-calendar-months" aria-hidden="true"></div>
+            <div id="public-calendar-days" class="public-calendar-days"></div>
+          </div>
+          <div class="public-events-heading">
+            <h4 id="public-events-title">最近记录</h4>
+            <button type="button" class="public-inline" id="public-show-all" hidden>查看全部日期</button>
+          </div>
+          <ol class="public-events" id="public-events" aria-labelledby="public-events-title"></ol>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
