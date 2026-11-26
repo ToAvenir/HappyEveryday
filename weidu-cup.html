@@ -3,23 +3,83 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="description" content="第一届微度杯即将到来。">
+  <meta name="description" content="第一届微度杯晋级赛对阵图与实时赛果。">
   <title>微度杯 · Happy everyday</title>
   <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="happy-everyday-mark.png">
   <link rel="stylesheet" href="weidu-cup.css">
+  <script defer src="weidu-cup-data.js"></script>
+  <script defer src="weidu-cup.js"></script>
 </head>
-<body>
-  <header class="cup-header">
-    <a class="cup-back" href="index.html#top">返回首页</a>
-  </header>
-  <main class="cup-stage" aria-labelledby="cup-title">
-    <div class="cup-reveal">
-      <h1 class="cup-title" id="cup-title">
-        <span class="cup-title-name">第一届微度杯</span>
-        <span class="cup-title-status" lang="en">is coming soon</span>
-      </h1>
-    </div>
-  </main>
+<body data-cup-mode="bracket" data-apple-theme="light">
+  <!-- 模式一：未开赛预告页（在 weidu-cup-data.js 中设 mode: "coming-soon" 时启用） -->
+  <div id="cup-coming-soon" class="cup-teaser" hidden>
+    <header class="cup-header">
+      <a class="cup-back" href="index.html#top">返回首页</a>
+    </header>
+    <main class="cup-stage" aria-labelledby="cup-teaser-title">
+      <div class="cup-reveal">
+        <h1 class="cup-title" id="cup-teaser-title">
+          <span class="cup-title-name">第一届微度杯</span>
+          <span class="cup-title-status" lang="en">is coming soon</span>
+        </h1>
+      </div>
+    </main>
+  </div>
+
+  <!-- 模式二：Apple 风格正式晋级赛对阵页（在 weidu-cup-data.js 中设 mode: "bracket" 时启用） -->
+  <div id="cup-bracket-app" class="apple-page">
+    <header class="apple-nav">
+      <div class="apple-nav-inner">
+        <div class="apple-nav-left">
+          <a class="apple-back-link" href="index.html#top" aria-label="返回 Happy everyday 首页">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M10 3.5L5.5 8L10 12.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>返回首页</span>
+          </a>
+          <span class="apple-nav-divider" aria-hidden="true"></span>
+          <span class="apple-nav-brand" id="nav-tournament-name">微度杯</span>
+        </div>
+
+        <div class="apple-nav-right">
+          <div class="apple-segmented" role="tablist" aria-label="赛区视图切换">
+            <button type="button" class="apple-seg-btn is-active" role="tab" aria-selected="true" data-zone-filter="all">全景对阵</button>
+            <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-zone-filter="left" id="tab-left-zone">上半区</button>
+            <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-zone-filter="center">总决赛</button>
+            <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-zone-filter="right" id="tab-right-zone">下半区</button>
+          </div>
+          <button type="button" class="apple-theme-btn" id="apple-theme-toggle" aria-label="切换浅色或深色外观">
+            <span id="apple-theme-label">深色外观</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="apple-main">
+      <section class="apple-hero" aria-labelledby="bracket-main-title">
+        <p class="apple-eyebrow" id="bracket-eyebrow">WEIDU CUP · TOURNAMENT</p>
+        <h1 class="apple-hero-title" id="bracket-main-title">第一届微度杯</h1>
+        <p class="apple-hero-subtitle" id="bracket-subtitle">双半区单败淘汰赛 · 胜者晋级 · 巅峰决战</p>
+
+        <div class="apple-metrics" id="bracket-metrics" aria-label="赛事概览指标"></div>
+      </section>
+
+      <section class="apple-showcase-shell" aria-label="晋级赛淘汰对阵图">
+        <div class="apple-bracket-surface">
+          <div class="bracket-scroll-viewport" id="bracket-viewport">
+            <div class="bracket-board" id="bracket-board">
+              <div class="bracket-round-headers" id="bracket-headers" aria-hidden="true"></div>
+              <div class="bracket-stage" id="bracket-stage">
+                <svg class="bracket-lines-svg" id="bracket-svg" aria-hidden="true"></svg>
+                <div class="bracket-columns" id="bracket-columns"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="apple-footnote">提示：将鼠标悬停或轻触任意队伍名称，可高亮追踪该队伍的完整晋级轨迹。</p>
+      </section>
+    </main>
+  </div>
 </body>
 </html>
