@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="第一届微度杯晋级赛对阵图与实时赛果。">
+  <meta name="description" content="第一届微度杯晋级赛对阵图、个人积分榜与实时赛果。">
   <title>微度杯 · Happy everyday</title>
-  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.ico?v=2" sizes="any">
+  <link rel="icon" href="happy-everyday-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="happy-everyday-mark.png">
   <link rel="stylesheet" href="weidu-cup.css">
   <script defer src="weidu-cup-data.js"></script>
   <script defer src="weidu-cup.js"></script>
 </head>
-<body data-cup-mode="bracket" data-apple-theme="light">
+<body data-cup-mode="bracket" data-apple-theme="dark">
   <!-- 模式一：未开赛预告页（在 weidu-cup-data.js 中设 mode: "coming-soon" 时启用） -->
   <div id="cup-coming-soon" class="cup-teaser" hidden>
     <header class="cup-header">
@@ -39,33 +40,82 @@
             <span>返回首页</span>
           </a>
           <span class="apple-nav-divider" aria-hidden="true"></span>
-          <span class="apple-nav-brand" id="nav-tournament-name">微度杯</span>
+          <div class="apple-brand-wrap">
+            <img class="apple-brand-mark" src="happy-everyday-mark.png" alt="" width="24" height="24">
+            <span class="apple-nav-brand" id="nav-tournament-name">第一届微度杯</span>
+          </div>
         </div>
 
         <div class="apple-nav-right">
-          <div class="apple-segmented" role="tablist" aria-label="赛区视图切换">
+          <!-- 原版双区视图下的分区筛选（仅当 mode: "bracket" 时显示） -->
+          <div class="apple-segmented" id="symmetric-zone-tabs" role="tablist" aria-label="赛区视图切换" hidden>
             <button type="button" class="apple-seg-btn is-active" role="tab" aria-selected="true" data-zone-filter="all">全景对阵</button>
             <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-zone-filter="left" id="tab-left-zone">上半区</button>
             <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-zone-filter="center">总决赛</button>
             <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-zone-filter="right" id="tab-right-zone">下半区</button>
           </div>
+
           <button type="button" class="apple-theme-btn" id="apple-theme-toggle" aria-label="切换浅色或深色外观">
-            <span id="apple-theme-label">深色外观</span>
+            <span id="apple-theme-label">浅色外观</span>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="apple-main">
+    <main class="apple-main" id="apple-main">
       <section class="apple-hero" aria-labelledby="bracket-main-title">
         <p class="apple-eyebrow" id="bracket-eyebrow">WEIDU CUP · TOURNAMENT</p>
         <h1 class="apple-hero-title" id="bracket-main-title">第一届微度杯</h1>
-        <p class="apple-hero-subtitle" id="bracket-subtitle">双半区单败淘汰赛 · 胜者晋级 · 巅峰决战</p>
-
-        <div class="apple-metrics" id="bracket-metrics" aria-label="赛事概览指标"></div>
       </section>
 
-      <section class="apple-showcase-shell" aria-label="晋级赛淘汰对阵图">
+      <!-- 视图选项 A（新增）：左侧个人积分表 + 右侧从下到上金字塔晋级图 -->
+      <section id="view-pyramid" class="pyramid-workspace" aria-label="个人积分榜与金字塔晋级图">
+        <aside class="apple-standings-card" aria-labelledby="standings-title">
+          <div class="standings-header">
+            <div>
+              <p class="standings-eyebrow">STANDINGS</p>
+              <h2 class="standings-title" id="standings-title">个人积分榜</h2>
+            </div>
+            <span class="standings-meta" id="standings-count"></span>
+          </div>
+
+          <div class="standings-table-wrap">
+            <table class="standings-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="col-rank">#</th>
+                  <th scope="col" class="col-player">姓名</th>
+                  <th scope="col" class="col-pts">个人积分</th>
+                  <th scope="col" class="col-gd">净胜球</th>
+                </tr>
+              </thead>
+              <tbody id="standings-tbody"></tbody>
+            </table>
+          </div>
+        </aside>
+
+        <div class="apple-pyramid-shell">
+          <div class="apple-bracket-surface pyramid-surface">
+            <div class="pyramid-surface-header">
+              <div class="pyramid-header-titles">
+                <span class="pyramid-eyebrow">CHAMPIONSHIP PYRAMID</span>
+                <h2 class="pyramid-title">八强淘汰晋级图</h2>
+              </div>
+            </div>
+
+            <div class="bracket-scroll-viewport">
+              <div class="pyramid-board" id="pyramid-board">
+                <svg class="bracket-lines-svg" id="pyramid-svg" aria-hidden="true"></svg>
+                <div class="pyramid-tiers" id="pyramid-tiers"></div>
+              </div>
+            </div>
+          </div>
+          <p class="apple-footnote">提示：悬停或轻触左侧积分榜姓名或右侧对阵选手，可联动高亮该选手的排名与晋级路径。</p>
+        </div>
+      </section>
+
+      <!-- 视图选项 B（保留原版）：16队/8队双半区左右对称汇聚对阵图 -->
+      <section id="view-symmetric" class="apple-showcase-shell" aria-label="双半区淘汰对阵图" hidden>
         <div class="apple-bracket-surface">
           <div class="bracket-scroll-viewport" id="bracket-viewport">
             <div class="bracket-board" id="bracket-board">

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="512" height="512">
+  <defs>
+    <linearGradient id="he-sunrise" x1="8%" y1="6%" x2="92%" y2="94%">
+      <stop offset="0%" stop-color="#FFD02C"/>
+      <stop offset="52%" stop-color="#FF7A0E"/>
+      <stop offset="100%" stop-color="#FF3E2A"/>
+    </linearGradient>
+    <radialGradient id="he-glow" cx="33%" cy="20%" r="52%">
+      <stop offset="0%" stop-color="#FFF9DA" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#FFF9DA" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="he-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="13" stdDeviation="15" flood-color="#9C2400" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="46" y="46" width="932" height="932" rx="212" fill="url(#he-sunrise)"/>
+  <rect x="46" y="46" width="932" height="932" rx="212" fill="url(#he-glow)"/>
+  <g filter="url(#he-shadow)">
+    <circle cx="348" cy="392" r="40" fill="#FFFDF9"/>
+    <path d="M582 248 Q582 322 654 352 Q580 356 550 424 Q550 350 478 320 Q552 316 582 248 Z" fill="#FFFDF9" stroke="#FFFDF9" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M226 548 C368 748 608 722 786 442" fill="none" stroke="#FFFDF9" stroke-width="64" stroke-linecap="round"/>
+    <path d="M656 434 Q732 414 802 422 Q798 496 774 566" fill="none" stroke="#FFFDF9" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

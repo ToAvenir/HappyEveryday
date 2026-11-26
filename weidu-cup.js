@@ -1,6 +1,12 @@
 (() => {
   const config = typeof weiduCupData === "object" && weiduCupData ? weiduCupData : {};
-  const mode = config.mode === "coming-soon" ? "coming-soon" : "bracket";
+  const rawMode = String(config.mode || "pyramid").trim();
+  const mode =
+    rawMode === "coming-soon"
+      ? "coming-soon"
+      : rawMode === "bracket"
+      ? "bracket"
+      : "pyramid";
 
   const teaserEl = document.getElementById("cup-coming-soon");
   const appEl = document.getElementById("cup-bracket-app");
@@ -14,26 +20,29 @@
   if (teaserEl) teaserEl.hidden = true;
   if (appEl) appEl.hidden = false;
 
-  const teamCount = config.teamCount === 8 ? 8 : 16;
-  const leftZoneName = config.leftZoneName || "上半区";
-  const rightZoneName = config.rightZoneName || "下半区";
+  const mainEl = document.getElementById("apple-main");
+  const viewPyramidEl = document.getElementById("view-pyramid");
+  const viewSymmetricEl = document.getElementById("view-symmetric");
+  const symmetricZoneTabsEl = document.getElementById("symmetric-zone-tabs");
 
-  // Populate text headers
   const setText = (id, text) => {
     const el = document.getElementById(id);
     if (el && text) el.textContent = text;
   };
-  setText("nav-tournament-name", config.title || "微度杯");
+
+  const leftZoneName = config.leftZoneName || "上半区";
+  const rightZoneName = config.rightZoneName || "下半区";
+  setText("nav-tournament-name", config.title || "第一届微度杯");
   setText("bracket-eyebrow", config.eyebrow || "WEIDU CUP · TOURNAMENT");
   setText("bracket-main-title", config.title || "第一届微度杯");
-  setText("bracket-subtitle", config.subtitle || "双半区单败淘汰赛 · 胜者晋级");
   setText("tab-left-zone", leftZoneName);
   setText("tab-right-zone", rightZoneName);
 
-  // Theme toggle (Light Cupertino Showcase default, Dark Cupertino optional)
+  // Theme toggle (supports defaultTheme in config + remembers manual toggle)
   const themeBtn = document.getElementById("apple-theme-toggle");
   const themeLabel = document.getElementById("apple-theme-label");
   const savedTheme = localStorage.getItem("weidu-cup-apple-theme");
+  const initialTheme = savedTheme || (config.defaultTheme === "light" ? "light" : "dark");
   const applyTheme = (theme) => {
     const next = theme === "dark" ? "dark" : "light";
     document.body.dataset.appleTheme = next;
@@ -41,7 +50,7 @@
       themeLabel.textContent = next === "dark" ? "浅色外观" : "深色外观";
     }
   };
-  applyTheme(savedTheme || "light");
+  applyTheme(initialTheme);
   if (themeBtn) {
     themeBtn.addEventListener("click", () => {
       const next = document.body.dataset.appleTheme === "dark" ? "light" : "dark";
@@ -50,7 +59,7 @@
     });
   }
 
-  // Helper: evaluate a single match from two team names and a [scoreA, scoreB] pair
+  // Shared helper: evaluate a single match
   function resolveMatch(id, teamA, teamB, rawScore) {
     const nameA = typeof teamA === "string" && teamA.trim() ? teamA.trim() : null;
     const nameB = typeof teamB === "string" && teamB.trim() ? teamB.trim() : null;
@@ -83,129 +92,7 @@
     };
   }
 
-  // Build rounds for one half-zone (left or right)
-  function buildZoneBracket(prefix, rawTeams, zoneScores) {
-    const perZone = teamCount / 2; // 8 or 4
-    const teams = Array.from({ length: perZone }, (_, idx) =>
-      Array.isArray(rawTeams) && rawTeams[idx] ? String(rawTeams[idx]) : `待定队伍 ${idx + 1}`
-    );
-    const s = zoneScores || {};
-    const rounds = [];
-
-    if (teamCount === 16) {
-      const r16Scores = Array.isArray(s.round16) ? s.round16 : [];
-      const r16 = [];
-      for (let i = 0; i < 4; i++) {
-        r16.push(resolveMatch(`${prefix}-r16-${i}`, teams[i * 2], teams[i * 2 + 1], r16Scores[i]));
-      }
-      rounds.push({ key: "round16", title: "16强首轮", matches: r16 });
-
-      const qScores = Array.isArray(s.quarter) ? s.quarter : [];
-      const quarter = [];
-      for (let i = 0; i < 2; i++) {
-        quarter.push(
-          resolveMatch(
-            `${prefix}-q-${i}`,
-            r16[i * 2].winner,
-            r16[i * 2 + 1].winner,
-            qScores[i]
-          )
-        );
-      }
-      rounds.push({ key: "quarter", title: "八强赛", matches: quarter });
-
-      const semiMatch = resolveMatch(
-        `${prefix}-semi-0`,
-        quarter[0].winner,
-        quarter[1].winner,
-        s.semi
-      );
-      rounds.push({ key: "semi", title: "半决赛", matches: [semiMatch] });
-    } else {
-      const qScores = Array.isArray(s.quarter) ? s.quarter : [];
-      const quarter = [];
-      for (let i = 0; i < 2; i++) {
-        quarter.push(resolveMatch(`${prefix}-q-${i}`, teams[i * 2], teams[i * 2 + 1], qScores[i]));
-      }
-      rounds.push({ key: "quarter", title: "八强赛", matches: quarter });
-
-      const semiMatch = resolveMatch(
-        `${prefix}-semi-0`,
-        quarter[0].winner,
-        quarter[1].winner,
-        s.semi
-      );
-      rounds.push({ key: "semi", title: "半决赛", matches: [semiMatch] });
-    }
-
-    const zoneChampion = rounds[rounds.length - 1].matches[0].winner;
-    return { rounds, zoneChampion };
-  }
-
-  const allScores = config.scores || {};
-  const leftData = buildZoneBracket("L", config.leftTeams, allScores.left);
-  const rightData = buildZoneBracket("R", config.rightTeams, allScores.right);
-  const grandFinal = resolveMatch(
-    "GF",
-    leftData.zoneChampion,
-    rightData.zoneChampion,
-    allScores.final
-  );
-
-  // Compute tournament overview metrics
-  const allMatches = [
-    ...leftData.rounds.flatMap((r) => r.matches),
-    ...rightData.rounds.flatMap((r) => r.matches),
-    grandFinal
-  ];
-  const decidedCount = allMatches.filter((m) => m.decided).length;
-  const totalMatches = allMatches.length;
-
-  let currentStageText = "待开赛";
-  if (grandFinal.decided) {
-    currentStageText = `总冠军：${grandFinal.winner}`;
-  } else if (leftData.zoneChampion || rightData.zoneChampion) {
-    currentStageText = "当前阶段：巅峰总决赛";
-  } else if (decidedCount > 0) {
-    currentStageText = "当前阶段：淘汰晋级中";
-  }
-
-  const metricsEl = document.getElementById("bracket-metrics");
-  if (metricsEl) {
-    metricsEl.innerHTML = "";
-    const pills = [
-      { label: "参赛规模", value: `${teamCount} 支队伍` },
-      { label: "赛程进度", value: `${decidedCount} / ${totalMatches} 场已决出` },
-      {
-        label: grandFinal.decided ? "桂冠得主" : "赛事状态",
-        value: grandFinal.decided ? grandFinal.winner : currentStageText,
-        isChampion: grandFinal.decided
-      }
-    ];
-    pills.forEach((p) => {
-      const pill = document.createElement("div");
-      pill.className = `apple-metric-pill${p.isChampion ? " is-champion" : ""}`;
-      const labelSpan = document.createElement("span");
-      labelSpan.className = "apple-metric-label";
-      labelSpan.textContent = p.label;
-      const valSpan = document.createElement("span");
-      valSpan.className = "apple-metric-value";
-      valSpan.textContent = p.value;
-      pill.append(labelSpan, valSpan);
-      metricsEl.appendChild(pill);
-    });
-  }
-
-  // DOM Builders
-  const boardEl = document.getElementById("bracket-board");
-  const headersEl = document.getElementById("bracket-headers");
-  const columnsEl = document.getElementById("bracket-columns");
-  const svgEl = document.getElementById("bracket-svg");
-  const stageEl = document.getElementById("bracket-stage");
-
-  boardEl.dataset.teamCount = String(teamCount);
-  let activeZoneView = "all";
-
+  // Shared Match Card Builder (Names + Scores only)
   function createMatchCard(match) {
     const card = document.createElement("article");
     card.className = "match-card";
@@ -248,19 +135,12 @@
     return card;
   }
 
-  function createCenterColumn() {
-    const col = document.createElement("div");
-    col.className = "bracket-col bracket-col-center";
-
-    const assembly = document.createElement("div");
-    assembly.className = "finals-assembly";
-
-    // Trophy + Champion Crown Card
+  function createCrownCard(finalMatch, idAttr, extraClass) {
     const crown = document.createElement("div");
-    crown.className = `champion-crown-card${grandFinal.decided ? " has-champion" : ""}`;
-    crown.id = "champion-crown-card";
-    if (grandFinal.winner) {
-      crown.dataset.teamName = grandFinal.winner;
+    crown.className = `champion-crown-card${extraClass ? ` ${extraClass}` : ""}${finalMatch.decided ? " has-champion" : ""}`;
+    crown.id = idAttr;
+    if (finalMatch.winner) {
+      crown.dataset.teamName = finalMatch.winner;
     }
 
     const trophy = document.createElement("div");
@@ -278,23 +158,25 @@
 
     const crownName = document.createElement("div");
     crownName.className = "champion-name";
-    crownName.textContent = grandFinal.winner || "冠军虚位以待";
+    crownName.textContent = finalMatch.winner || "冠军虚位以待";
 
     crown.append(trophy, crownLabel, crownName);
+    return crown;
+  }
 
-    // Side-by-side Grand Finals Duel Card (NBA Playoffs center style, pure names + scores)
+  function createFinalsDuelCard(finalMatch, leftLabel, rightLabel) {
     const duel = document.createElement("article");
     duel.className = "finals-duel-card";
-    duel.dataset.matchId = grandFinal.id;
+    duel.dataset.matchId = finalMatch.id;
 
     const badge = document.createElement("div");
     badge.className = "finals-duel-badge";
-    badge.textContent = "GRAND FINALS · 巅峰对决";
+    badge.textContent = "GRAND FINALS · 巅峰决战";
 
     const duelGrid = document.createElement("div");
     duelGrid.className = "finals-duel-grid";
 
-    const zones = [`${leftZoneName}代表`, `${rightZoneName}代表`];
+    const labels = [leftLabel, rightLabel];
     [0, 1].forEach((idx) => {
       if (idx === 1) {
         const vs = document.createElement("span");
@@ -303,17 +185,17 @@
         duelGrid.appendChild(vs);
       }
 
-      const teamName = grandFinal.teams[idx];
+      const teamName = finalMatch.teams[idx];
       const box = document.createElement("div");
       box.className = "finals-contender";
       if (!teamName) box.classList.add("is-tbd");
-      if (grandFinal.winnerIndex === idx) box.classList.add("is-winner");
-      if (grandFinal.decided && grandFinal.winnerIndex !== idx) box.classList.add("is-loser");
+      if (finalMatch.winnerIndex === idx) box.classList.add("is-winner");
+      if (finalMatch.decided && finalMatch.winnerIndex !== idx) box.classList.add("is-loser");
       if (teamName) box.dataset.teamName = teamName;
 
       const zSpan = document.createElement("span");
       zSpan.className = "finals-contender-zone";
-      zSpan.textContent = zones[idx];
+      zSpan.textContent = labels[idx];
 
       const nSpan = document.createElement("span");
       nSpan.className = "finals-contender-name";
@@ -322,20 +204,326 @@
 
       const sSpan = document.createElement("span");
       sSpan.className = "finals-contender-score";
-      sSpan.textContent = grandFinal.scores[idx] !== null ? String(grandFinal.scores[idx]) : "—";
+      sSpan.textContent = finalMatch.scores[idx] !== null ? String(finalMatch.scores[idx]) : "—";
 
       box.append(zSpan, nSpan, sSpan);
       duelGrid.appendChild(box);
     });
 
     duel.append(badge, duelGrid);
+    return duel;
+  }
+
+  // ==========================================================================
+  // DATA BUILDER 1: NEW PYRAMID + PERSONAL STANDINGS
+  // ==========================================================================
+  const pCfg = config.pyramidStage || {};
+  const rawStandings = Array.isArray(pCfg.standings) ? pCfg.standings : [];
+  const standingsList = rawStandings.map((item, i) => ({
+    name: item && item.name ? String(item.name).trim() : `选手 ${i + 1}`,
+    points: Number.isFinite(Number(item && item.points)) ? Number(item.points) : 0,
+    goalDiff: Number.isFinite(Number(item && item.goalDiff)) ? Number(item.goalDiff) : 0
+  }));
+
+  if (pCfg.autoSortStandings !== false) {
+    standingsList.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return b.goalDiff - a.goalDiff;
+    });
+  }
+
+  const pPlayers = Array.from({ length: 8 }, (_, idx) =>
+    Array.isArray(pCfg.players) && pCfg.players[idx] ? String(pCfg.players[idx]) : `待定选手 ${idx + 1}`
+  );
+  const pScores = pCfg.scores || {};
+  const pQuarters = Array.from({ length: 4 }, (_, i) =>
+    resolveMatch(
+      `P-q-${i}`,
+      pPlayers[i * 2],
+      pPlayers[i * 2 + 1],
+      Array.isArray(pScores.quarter) ? pScores.quarter[i] : null
+    )
+  );
+  const pSemis = Array.from({ length: 2 }, (_, i) =>
+    resolveMatch(
+      `P-s-${i}`,
+      pQuarters[i * 2].winner,
+      pQuarters[i * 2 + 1].winner,
+      Array.isArray(pScores.semi) ? pScores.semi[i] : null
+    )
+  );
+  const pFinal = resolveMatch("P-GF", pSemis[0].winner, pSemis[1].winner, pScores.final);
+
+  function renderStandingsTable() {
+    const tbody = document.getElementById("standings-tbody");
+    const countEl = document.getElementById("standings-count");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    if (countEl) {
+      countEl.textContent = `共 ${standingsList.length} 人`;
+    }
+
+    standingsList.forEach((row, idx) => {
+      const rank = idx + 1;
+      const tr = document.createElement("tr");
+      tr.className = "standings-row";
+      tr.dataset.rank = String(rank);
+      tr.dataset.teamName = row.name;
+
+      const tdRank = document.createElement("td");
+      tdRank.className = "col-rank";
+      const badge = document.createElement("span");
+      badge.className = "rank-badge";
+      badge.textContent = String(rank);
+      tdRank.appendChild(badge);
+
+      const tdName = document.createElement("td");
+      tdName.className = "col-player standings-player-name";
+      tdName.textContent = row.name;
+
+      const tdPts = document.createElement("td");
+      tdPts.className = "col-pts standings-pts-cell";
+      const ptsPill = document.createElement("span");
+      ptsPill.className = "standings-pts-pill";
+      ptsPill.textContent = String(row.points);
+      tdPts.appendChild(ptsPill);
+
+      const tdGd = document.createElement("td");
+      const gdFormatted = row.goalDiff > 0 ? `+${row.goalDiff}` : String(row.goalDiff);
+      tdGd.className = `col-gd standings-gd-cell${
+        row.goalDiff > 0 ? " is-positive" : row.goalDiff < 0 ? " is-negative" : ""
+      }`;
+      tdGd.textContent = gdFormatted;
+
+      tr.append(tdRank, tdName, tdPts, tdGd);
+      tbody.appendChild(tr);
+    });
+  }
+
+  const pyramidBoardEl = document.getElementById("pyramid-board");
+  const pyramidTiersEl = document.getElementById("pyramid-tiers");
+  const pyramidSvgEl = document.getElementById("pyramid-svg");
+
+  function renderPyramidBracket() {
+    if (!pyramidTiersEl) return;
+    pyramidTiersEl.innerHTML = "";
+
+    const tierSpecs = [
+      {
+        step: "TOP · 桂冠",
+        name: "总冠军",
+        slots: 1,
+        isCrown: true,
+        nodes: [createCrownCard(pFinal, "pyramid-crown-card", "pyramid-crown-card")]
+      },
+      {
+        step: "FINAL · 决战",
+        name: "总决赛",
+        slots: 1,
+        nodes: [createFinalsDuelCard(pFinal, "左半区晋级", "右半区晋级")]
+      },
+      {
+        step: "ROUND 2",
+        name: "半决赛",
+        slots: 2,
+        nodes: pSemis.map((m) => createMatchCard(m))
+      },
+      {
+        step: "ROUND 1",
+        name: "八强首轮",
+        slots: 4,
+        nodes: pQuarters.map((m) => createMatchCard(m))
+      }
+    ];
+
+    tierSpecs.forEach((t) => {
+      const row = document.createElement("div");
+      row.className = `pyramid-tier${t.isCrown ? " is-crown-tier" : ""}`;
+
+      const label = document.createElement("div");
+      label.className = "pyramid-tier-label";
+      label.innerHTML = `
+        <span class="pyramid-tier-step">${t.step}</span>
+        <span class="pyramid-tier-name">${t.name}</span>
+      `;
+
+      const slotsWrap = document.createElement("div");
+      slotsWrap.className = "pyramid-tier-slots";
+      slotsWrap.dataset.slots = String(t.slots);
+      t.nodes.forEach((node) => slotsWrap.appendChild(node));
+
+      row.append(label, slotsWrap);
+      pyramidTiersEl.appendChild(row);
+    });
+  }
+
+  // Upward rounded-elbow SVG path from bottom child (x1, y1) UP to top parent (x2, y2)
+  function buildUpwardElbowPath(x1, y1, x2, y2) {
+    const midY = (y1 + y2) / 2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    if (Math.abs(dx) < 1.5) {
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    }
+    const dirX = dx >= 0 ? 1 : -1;
+    const dirY = dy >= 0 ? 1 : -1; // -1 when moving upwards
+    const r = Math.min(8, Math.abs(dx) / 2, Math.abs(dy) / 4);
+
+    return [
+      `M ${x1} ${y1}`,
+      `L ${x1} ${midY - dirY * r}`,
+      `Q ${x1} ${midY} ${x1 + dirX * r} ${midY}`,
+      `L ${x2 - dirX * r} ${midY}`,
+      `Q ${x2} ${midY} ${x2} ${midY + dirY * r}`,
+      `L ${x2} ${y2}`
+    ].join(" ");
+  }
+
+  function drawPyramidConnectors() {
+    if (!pyramidSvgEl || !pyramidBoardEl || !pyramidTiersEl) return;
+    pyramidSvgEl.innerHTML = "";
+    const boardRect = pyramidBoardEl.getBoundingClientRect();
+    if (!boardRect.width || !boardRect.height) return;
+
+    pyramidSvgEl.setAttribute("width", String(boardRect.width));
+    pyramidSvgEl.setAttribute("height", String(boardRect.height));
+    pyramidSvgEl.setAttribute("viewBox", `0 0 ${boardRect.width} ${boardRect.height}`);
+
+    const getBox = (selector) => {
+      const el = pyramidTiersEl.querySelector(selector);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        cx: r.left - boardRect.left + r.width / 2,
+        leftQuarterX: r.left - boardRect.left + r.width * 0.27,
+        rightQuarterX: r.left - boardRect.left + r.width * 0.73,
+        topY: r.top - boardRect.top,
+        bottomY: r.bottom - boardRect.top
+      };
+    };
+
+    const appendPath = (d, extraClass, winnerTeam) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      path.setAttribute("class", `bracket-connector${extraClass ? ` ${extraClass}` : ""}`);
+      if (winnerTeam) path.dataset.teamName = winnerTeam;
+      pyramidSvgEl.appendChild(path);
+    };
+
+    // 1) Quarterfinals (Bottom Row) -> Semifinals (Row 3)
+    pQuarters.forEach((qm, idx) => {
+      const targetSemi = pSemis[Math.floor(idx / 2)];
+      const fromBox = getBox(`[data-match-id="${qm.id}"]`);
+      const toBox = getBox(`[data-match-id="${targetSemi.id}"]`);
+      if (fromBox && toBox) {
+        appendPath(
+          buildUpwardElbowPath(fromBox.cx, fromBox.topY, toBox.cx, toBox.bottomY),
+          qm.decided ? "is-decided" : "",
+          qm.winner
+        );
+      }
+    });
+
+    // 2) Semifinals (Row 3) -> Grand Finals Duel Card (Row 2, connecting neatly into left & right contender halves!)
+    const gfBox = getBox(`[data-match-id="${pFinal.id}"]`);
+    pSemis.forEach((sm, idx) => {
+      const fromBox = getBox(`[data-match-id="${sm.id}"]`);
+      if (fromBox && gfBox) {
+        const targetX = idx === 0 ? gfBox.leftQuarterX : gfBox.rightQuarterX;
+        appendPath(
+          buildUpwardElbowPath(fromBox.cx, fromBox.topY, targetX, gfBox.bottomY),
+          sm.decided ? "is-gold" : "",
+          sm.winner
+        );
+      }
+    });
+
+    // 3) Grand Finals (Row 2) -> Top Champion Crown Card (Row 1)
+    const crownBox = getBox("#pyramid-crown-card");
+    if (gfBox && crownBox) {
+      appendPath(
+        `M ${gfBox.cx} ${gfBox.topY} L ${crownBox.cx} ${crownBox.bottomY}`,
+        pFinal.decided ? "is-gold" : "",
+        pFinal.winner
+      );
+    }
+  }
+
+  // ==========================================================================
+  // DATA BUILDER 2: ORIGINAL SYMMETRIC 16/8-TEAM BRACKET
+  // ==========================================================================
+  const teamCount = config.teamCount === 8 ? 8 : 16;
+
+  function buildZoneBracket(prefix, rawTeams, zoneScores) {
+    const perZone = teamCount / 2;
+    const teams = Array.from({ length: perZone }, (_, idx) =>
+      Array.isArray(rawTeams) && rawTeams[idx] ? String(rawTeams[idx]) : `待定队伍 ${idx + 1}`
+    );
+    const s = zoneScores || {};
+    const rounds = [];
+
+    if (teamCount === 16) {
+      const r16Scores = Array.isArray(s.round16) ? s.round16 : [];
+      const r16 = [];
+      for (let i = 0; i < 4; i++) {
+        r16.push(resolveMatch(`${prefix}-r16-${i}`, teams[i * 2], teams[i * 2 + 1], r16Scores[i]));
+      }
+      rounds.push({ key: "round16", title: "16强首轮", matches: r16 });
+
+      const qScores = Array.isArray(s.quarter) ? s.quarter : [];
+      const quarter = [];
+      for (let i = 0; i < 2; i++) {
+        quarter.push(resolveMatch(`${prefix}-q-${i}`, r16[i * 2].winner, r16[i * 2 + 1].winner, qScores[i]));
+      }
+      rounds.push({ key: "quarter", title: "八强赛", matches: quarter });
+
+      const semiMatch = resolveMatch(`${prefix}-semi-0`, quarter[0].winner, quarter[1].winner, s.semi);
+      rounds.push({ key: "semi", title: "半决赛", matches: [semiMatch] });
+    } else {
+      const qScores = Array.isArray(s.quarter) ? s.quarter : [];
+      const quarter = [];
+      for (let i = 0; i < 2; i++) {
+        quarter.push(resolveMatch(`${prefix}-q-${i}`, teams[i * 2], teams[i * 2 + 1], qScores[i]));
+      }
+      rounds.push({ key: "quarter", title: "八强赛", matches: quarter });
+
+      const semiMatch = resolveMatch(`${prefix}-semi-0`, quarter[0].winner, quarter[1].winner, s.semi);
+      rounds.push({ key: "semi", title: "半决赛", matches: [semiMatch] });
+    }
+
+    const zoneChampion = rounds[rounds.length - 1].matches[0].winner;
+    return { rounds, zoneChampion };
+  }
+
+  const allScores = config.scores || {};
+  const leftData = buildZoneBracket("L", config.leftTeams, allScores.left);
+  const rightData = buildZoneBracket("R", config.rightTeams, allScores.right);
+  const grandFinal = resolveMatch("GF", leftData.zoneChampion, rightData.zoneChampion, allScores.final);
+
+  const boardEl = document.getElementById("bracket-board");
+  const headersEl = document.getElementById("bracket-headers");
+  const columnsEl = document.getElementById("bracket-columns");
+  const svgEl = document.getElementById("bracket-svg");
+  const stageEl = document.getElementById("bracket-stage");
+
+  boardEl.dataset.teamCount = String(teamCount);
+  let activeZoneView = "all";
+
+  function createSymmetricCenterColumn() {
+    const col = document.createElement("div");
+    col.className = "bracket-col bracket-col-center";
+    const assembly = document.createElement("div");
+    assembly.className = "finals-assembly";
+
+    const crown = createCrownCard(grandFinal, "champion-crown-card", "");
+    const duel = createFinalsDuelCard(grandFinal, `${leftZoneName}代表`, `${rightZoneName}代表`);
+
     assembly.append(crown, duel);
     col.appendChild(assembly);
     return col;
   }
 
-  // Render columns according to active zone filter
-  function renderBracket() {
+  function renderSymmetricBracket() {
     headersEl.innerHTML = "";
     columnsEl.innerHTML = "";
     boardEl.dataset.zoneView = activeZoneView;
@@ -344,36 +532,18 @@
 
     if (activeZoneView === "all" || activeZoneView === "left") {
       leftData.rounds.forEach((round) => {
-        colSpecs.push({
-          zoneLabel: leftZoneName,
-          title: round.title,
-          side: "left",
-          matches: round.matches
-        });
+        colSpecs.push({ zoneLabel: leftZoneName, title: round.title, side: "left", matches: round.matches });
       });
     }
 
     if (activeZoneView === "all" || activeZoneView === "center") {
-      colSpecs.push({
-        zoneLabel: "巅峰决战",
-        title: "总决赛",
-        side: "center",
-        isCenter: true
-      });
+      colSpecs.push({ zoneLabel: "巅峰决战", title: "总决赛", side: "center", isCenter: true });
     }
 
     if (activeZoneView === "all" || activeZoneView === "right") {
-      const rightRounds =
-        activeZoneView === "right"
-          ? rightData.rounds // left-to-right when viewing right zone solo
-          : [...rightData.rounds].reverse(); // converging right-to-left in panoramic view
+      const rightRounds = activeZoneView === "right" ? rightData.rounds : [...rightData.rounds].reverse();
       rightRounds.forEach((round) => {
-        colSpecs.push({
-          zoneLabel: rightZoneName,
-          title: round.title,
-          side: "right",
-          matches: round.matches
-        });
+        colSpecs.push({ zoneLabel: rightZoneName, title: round.title, side: "right", matches: round.matches });
       });
     }
 
@@ -391,7 +561,7 @@
       headersEl.appendChild(h);
 
       if (spec.isCenter) {
-        columnsEl.appendChild(createCenterColumn());
+        columnsEl.appendChild(createSymmetricCenterColumn());
       } else {
         const col = document.createElement("div");
         col.className = "bracket-col";
@@ -399,20 +569,9 @@
         columnsEl.appendChild(col);
       }
     });
-
-    bindHoverHighlights();
-    scheduleDrawConnectors();
   }
 
-  function scheduleDrawConnectors() {
-    requestAnimationFrame(() => {
-      drawConnectors();
-      requestAnimationFrame(drawConnectors);
-    });
-  }
-
-  // Smooth rounded-elbow SVG connector path
-  function buildElbowPath(x1, y1, x2, y2) {
+  function buildHorizontalElbowPath(x1, y1, x2, y2) {
     const midX = (x1 + x2) / 2;
     const dy = y2 - y1;
     const dx = x2 - x1;
@@ -433,8 +592,7 @@
     ].join(" ");
   }
 
-  // Dynamically draw SVG connectors from actual card coordinates
-  function drawConnectors() {
+  function drawSymmetricConnectors() {
     svgEl.innerHTML = "";
     const stageRect = stageEl.getBoundingClientRect();
     if (!stageRect.width || !stageRect.height) return;
@@ -449,8 +607,7 @@
       const r = el.getBoundingClientRect();
       return {
         x: side === "right" ? r.right - stageRect.left : r.left - stageRect.left,
-        y: r.top - stageRect.top + r.height / 2,
-        topY: r.top - stageRect.top
+        y: r.top - stageRect.top + r.height / 2
       };
     };
 
@@ -458,13 +615,10 @@
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", d);
       path.setAttribute("class", `bracket-connector${extraClass ? ` ${extraClass}` : ""}`);
-      if (winnerTeam) {
-        path.dataset.teamName = winnerTeam;
-      }
+      if (winnerTeam) path.dataset.teamName = winnerTeam;
       svgEl.appendChild(path);
     };
 
-    // Connect rounds within a zone
     const connectZoneRounds = (rounds, flowDirection) => {
       for (let rIdx = 0; rIdx < rounds.length - 1; rIdx++) {
         const currMatches = rounds[rIdx].matches;
@@ -476,11 +630,7 @@
           const p1 = getCardAnchor(m.id, fromSide);
           const p2 = getCardAnchor(targetMatch.id, toSide);
           if (p1 && p2) {
-            appendConnector(
-              buildElbowPath(p1.x, p1.y, p2.x, p2.y),
-              m.decided ? "is-decided" : "",
-              m.winner
-            );
+            appendConnector(buildHorizontalElbowPath(p1.x, p1.y, p2.x, p2.y), m.decided ? "is-decided" : "", m.winner);
           }
         });
       }
@@ -495,7 +645,6 @@
       connectZoneRounds(rightData.rounds, "ltr");
     }
 
-    // In panoramic view, connect both Zone Finals into Center Grand Finals + Trophy line
     if (activeZoneView === "all") {
       const leftFinal = leftData.rounds[leftData.rounds.length - 1].matches[0];
       const rightFinal = rightData.rounds[rightData.rounds.length - 1].matches[0];
@@ -503,24 +652,15 @@
       const pLeft = getCardAnchor(leftFinal.id, "right");
       const pCenterLeft = getCardAnchor(grandFinal.id, "left");
       if (pLeft && pCenterLeft) {
-        appendConnector(
-          buildElbowPath(pLeft.x, pLeft.y, pCenterLeft.x, pCenterLeft.y),
-          leftFinal.decided ? "is-gold" : "",
-          leftFinal.winner
-        );
+        appendConnector(buildHorizontalElbowPath(pLeft.x, pLeft.y, pCenterLeft.x, pCenterLeft.y), leftFinal.decided ? "is-gold" : "", leftFinal.winner);
       }
 
       const pRight = getCardAnchor(rightFinal.id, "left");
       const pCenterRight = getCardAnchor(grandFinal.id, "right");
       if (pRight && pCenterRight) {
-        appendConnector(
-          buildElbowPath(pRight.x, pRight.y, pCenterRight.x, pCenterRight.y),
-          rightFinal.decided ? "is-gold" : "",
-          rightFinal.winner
-        );
+        appendConnector(buildHorizontalElbowPath(pRight.x, pRight.y, pCenterRight.x, pCenterRight.y), rightFinal.decided ? "is-gold" : "", rightFinal.winner);
       }
 
-      // Vertical line from Grand Finals up to Champion Crown Card
       const crownEl = document.getElementById("champion-crown-card");
       const duelEl = columnsEl.querySelector(`[data-match-id="${grandFinal.id}"]`);
       if (crownEl && duelEl) {
@@ -529,53 +669,89 @@
         const cx = dr.left - stageRect.left + dr.width / 2;
         const y1 = dr.top - stageRect.top;
         const y2 = cr.bottom - stageRect.top;
-        appendConnector(
-          `M ${cx} ${y1} L ${cx} ${y2}`,
-          grandFinal.decided ? "is-gold" : "",
-          grandFinal.winner
-        );
+        appendConnector(`M ${cx} ${y1} L ${cx} ${y2}`, grandFinal.decided ? "is-gold" : "", grandFinal.winner);
       }
     }
   }
 
-  // Hover / Tap a team to trace its full path across all rounds
+  // ==========================================================================
+  // MODE INITIALIZATION (driven solely by weiduCupData.mode)
+  // ==========================================================================
+  const activeLayout = mode === "bracket" ? "symmetric" : "pyramid";
+
+  // Unified Cross-Highlight across Standings Table + Active Bracket
   function clearHighlight() {
-    boardEl.classList.remove("is-highlighting");
-    columnsEl.querySelectorAll(".is-team-focus").forEach((el) => el.classList.remove("is-team-focus"));
-    svgEl.querySelectorAll(".is-path-focus").forEach((el) => el.classList.remove("is-path-focus"));
+    document.body.classList.remove("is-highlighting-player");
+    document.querySelectorAll(".is-team-focus").forEach((el) => el.classList.remove("is-team-focus"));
+    document.querySelectorAll(".is-path-focus").forEach((el) => el.classList.remove("is-path-focus"));
   }
 
-  function highlightTeam(name) {
+  function highlightPlayerOrTeam(name) {
     if (!name) {
       clearHighlight();
       return;
     }
-    boardEl.classList.add("is-highlighting");
-    columnsEl.querySelectorAll("[data-team-name]").forEach((el) => {
-      el.classList.toggle("is-team-focus", el.dataset.teamName === name);
-    });
-    svgEl.querySelectorAll(".bracket-connector").forEach((el) => {
-      el.classList.toggle("is-path-focus", el.dataset.teamName === name);
+    document.body.classList.add("is-highlighting-player");
+    document.querySelectorAll("[data-team-name]").forEach((el) => {
+      if (el.classList.contains("bracket-connector")) {
+        el.classList.toggle("is-path-focus", el.dataset.teamName === name);
+      } else {
+        el.classList.toggle("is-team-focus", el.dataset.teamName === name);
+      }
     });
   }
 
   document.addEventListener("click", () => clearHighlight());
 
-  function bindHoverHighlights() {
-    const teamElements = columnsEl.querySelectorAll("[data-team-name]");
-
-    teamElements.forEach((el) => {
-      el.addEventListener("mouseenter", () => highlightTeam(el.dataset.teamName));
-      el.addEventListener("mouseleave", () => highlightTeam(null));
+  function bindAllHighlights() {
+    document.querySelectorAll("[data-team-name]:not(.bracket-connector)").forEach((el) => {
+      if (el.dataset.boundHighlight === "1") return;
+      el.dataset.boundHighlight = "1";
+      el.addEventListener("mouseenter", () => highlightPlayerOrTeam(el.dataset.teamName));
+      el.addEventListener("mouseleave", () => highlightPlayerOrTeam(null));
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        const isAlreadyFocused = el.classList.contains("is-team-focus");
-        highlightTeam(isAlreadyFocused ? null : el.dataset.teamName);
+        const already = el.classList.contains("is-team-focus");
+        highlightPlayerOrTeam(already ? null : el.dataset.teamName);
       });
     });
   }
 
-  // Segmented Zone Filter Tabs
+  function scheduleRedraw() {
+    requestAnimationFrame(() => {
+      if (activeLayout === "pyramid") {
+        drawPyramidConnectors();
+        requestAnimationFrame(drawPyramidConnectors);
+      } else {
+        drawSymmetricConnectors();
+        requestAnimationFrame(drawSymmetricConnectors);
+      }
+    });
+  }
+
+  function initActiveMode() {
+    clearHighlight();
+    if (mainEl) mainEl.dataset.activeLayout = activeLayout;
+
+    const isPyramid = activeLayout === "pyramid";
+    if (viewPyramidEl) viewPyramidEl.hidden = !isPyramid;
+    if (viewSymmetricEl) viewSymmetricEl.hidden = isPyramid;
+    if (symmetricZoneTabsEl) symmetricZoneTabsEl.hidden = isPyramid;
+
+    if (isPyramid) {
+      renderStandingsTable();
+      renderPyramidBracket();
+    } else {
+      renderSymmetricBracket();
+    }
+
+    bindAllHighlights();
+    scheduleRedraw();
+  }
+
+  initActiveMode();
+
+  // Symmetric view zone filter tabs (only visible when mode === "bracket")
   document.querySelectorAll("[data-zone-filter]").forEach((btn) => {
     btn.addEventListener("click", () => {
       activeZoneView = btn.dataset.zoneFilter || "all";
@@ -584,18 +760,20 @@
         b.classList.toggle("is-active", active);
         b.setAttribute("aria-selected", String(active));
       });
-      renderBracket();
+      renderSymmetricBracket();
+      bindAllHighlights();
+      scheduleRedraw();
     });
   });
 
-  // Redraw connectors seamlessly on resize
+  // ResizeObserver for seamless connector redraw on both views
   if (typeof ResizeObserver !== "undefined") {
-    const ro = new ResizeObserver(() => scheduleDrawConnectors());
-    ro.observe(stageEl);
-    ro.observe(columnsEl);
+    const ro = new ResizeObserver(() => scheduleRedraw());
+    if (stageEl) ro.observe(stageEl);
+    if (columnsEl) ro.observe(columnsEl);
+    if (pyramidBoardEl) ro.observe(pyramidBoardEl);
+    if (pyramidTiersEl) ro.observe(pyramidTiersEl);
   } else {
-    window.addEventListener("resize", () => scheduleDrawConnectors());
+    window.addEventListener("resize", () => scheduleRedraw());
   }
-
-  renderBracket();
 })();

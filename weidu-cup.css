@@ -1,18 +1,20 @@
 /* ==========================================================================
-   Weidu Cup — Apple Minimalist Showcase Style + Symmetric Playoffs Bracket
-   Inspired by Cupertino HIG / StyleKit Apple Style
+   Weidu Cup — Apple Minimalist Showcase Style
+   1) Pyramid View: Left Personal Standings Table + Bottom-to-Top 8-Player Bracket
+   2) Symmetric View: 16/8-Team Left-Right Converging Playoffs Bracket
    ========================================================================== */
 
 :root {
   --apple-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
-  --edge: clamp(16px, 4vw, 48px);
+  --edge: clamp(16px, 3vw, 42px);
 
-  /* Cupertino Light Tokens (Default Apple Showcase) */
+  /* Cupertino Light Tokens */
   --bg-canvas: #f5f5f7;
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
   --bg-subtle: #f5f5f7;
+  --bg-row-hover: rgba(0, 113, 227, 0.05);
   --bg-nav: rgba(255, 255, 255, 0.76);
   --bg-seg: rgba(118, 118, 128, 0.12);
   --bg-seg-active: #ffffff;
@@ -29,10 +31,15 @@
 
   --accent-blue: #0071e3;
   --accent-blue-soft: rgba(0, 113, 227, 0.10);
+  --accent-green: #1d8348;
+  --accent-green-soft: rgba(29, 131, 72, 0.10);
   --accent-gold: #b8860b;
   --accent-gold-bright: #d49b19;
   --accent-gold-soft: rgba(212, 155, 25, 0.12);
   --accent-gold-border: rgba(212, 155, 25, 0.34);
+  --accent-silver-soft: rgba(142, 142, 147, 0.16);
+  --accent-bronze-soft: rgba(180, 105, 55, 0.14);
+  --accent-bronze: #a05a2c;
 
   --shadow-surface: 0 20px 60px rgba(0, 0, 0, 0.045), 0 2px 10px rgba(0, 0, 0, 0.03);
   --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.035), 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -47,7 +54,8 @@ body[data-apple-theme="dark"] {
   --bg-surface: #111113;
   --bg-elevated: #1c1c1e;
   --bg-subtle: #161618;
-  --bg-nav: rgba(22, 22, 24, 0.76);
+  --bg-row-hover: rgba(41, 151, 255, 0.10);
+  --bg-nav: rgba(22, 22, 24, 0.78);
   --bg-seg: rgba(118, 118, 128, 0.24);
   --bg-seg-active: #3a3a3c;
 
@@ -63,10 +71,15 @@ body[data-apple-theme="dark"] {
 
   --accent-blue: #2997ff;
   --accent-blue-soft: rgba(41, 151, 255, 0.16);
+  --accent-green: #30d158;
+  --accent-green-soft: rgba(48, 209, 88, 0.14);
   --accent-gold: #f5c451;
   --accent-gold-bright: #ffd469;
   --accent-gold-soft: rgba(245, 196, 81, 0.15);
   --accent-gold-border: rgba(245, 196, 81, 0.38);
+  --accent-silver-soft: rgba(174, 174, 178, 0.20);
+  --accent-bronze-soft: rgba(210, 132, 82, 0.20);
+  --accent-bronze: #e09a6c;
 
   --shadow-surface: 0 24px 64px rgba(0, 0, 0, 0.55);
   --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.32);
@@ -124,7 +137,7 @@ button {
 }
 
 .apple-nav-inner {
-  max-width: 1480px;
+  max-width: 1760px;
   margin: 0 auto;
   min-height: 54px;
   padding: 8px var(--edge);
@@ -151,7 +164,7 @@ button {
   font-weight: 500;
   padding: 6px 10px 6px 6px;
   border-radius: 980px;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .apple-back-link:hover {
@@ -162,6 +175,19 @@ button {
   width: 1px;
   height: 15px;
   background: var(--line-hairline);
+}
+
+.apple-brand-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.apple-brand-mark {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
 }
 
 .apple-nav-brand {
@@ -218,7 +244,7 @@ button {
   border-radius: 980px;
   font-size: 0.8125rem;
   font-weight: 500;
-  transition: border-color 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .apple-theme-btn:hover {
@@ -231,13 +257,17 @@ button {
 .apple-main {
   max-width: 1520px;
   margin: 0 auto;
-  padding: clamp(22px, 3vw, 40px) var(--edge) clamp(40px, 5vw, 72px);
+  padding: clamp(22px, 3vw, 38px) var(--edge) clamp(40px, 5vw, 68px);
+}
+
+.apple-main[data-active-layout="pyramid"] {
+  max-width: 1760px;
 }
 
 .apple-hero {
   text-align: center;
   max-width: 760px;
-  margin: 0 auto clamp(20px, 2.6vw, 32px);
+  margin: 0 auto clamp(20px, 2.5vw, 30px);
 }
 
 .apple-eyebrow {
@@ -251,62 +281,331 @@ button {
 
 .apple-hero-title {
   margin: 0;
-  font-size: clamp(1.95rem, 3.8vw, 2.85rem);
+  font-size: clamp(1.95rem, 3.6vw, 2.8rem);
   font-weight: 700;
   letter-spacing: -0.032em;
   line-height: 1.08;
   color: var(--ink-primary);
 }
 
-.apple-hero-subtitle {
-  margin: 8px auto 0;
-  font-size: clamp(0.92rem, 1.3vw, 1.06rem);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--ink-secondary);
+/* ==========================================================================
+    NEW OPTION: Pyramid Workspace (Left Personal Standings + Right Bottom-Up Bracket)
+   ========================================================================== */
+.pyramid-workspace {
+  display: grid;
+  grid-template-columns: minmax(300px, 356px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(18px, 2vw, 26px);
 }
 
-.apple-metrics {
-  margin-top: 16px;
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: center;
+/* Left Standings Card (Placed right inside the user's left red-box position) */
+.apple-standings-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-hairline);
+  border-radius: 28px;
+  box-shadow: var(--shadow-surface);
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.standings-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 10px;
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--line-hairline);
 }
 
-.apple-metric-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 16px;
-  border-radius: 980px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--line-card);
-  box-shadow: var(--shadow-card);
-  font-size: 0.84rem;
-}
-
-.apple-metric-label {
-  color: var(--ink-tertiary);
-}
-
-.apple-metric-value {
+.standings-eyebrow {
+  margin: 0 0 3px;
+  font-size: 0.68rem;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+}
+
+.standings-title {
+  margin: 0;
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--ink-primary);
+}
+
+.standings-meta {
+  font-size: 0.78rem;
+  color: var(--ink-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
-.apple-metric-pill.is-champion {
-  border-color: var(--accent-gold-border);
-  background: var(--accent-gold-soft);
+.standings-table-wrap {
+  width: 100%;
+  overflow-x: auto;
 }
 
-.apple-metric-pill.is-champion .apple-metric-value {
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.standings-table thead th {
+  padding: 6px 8px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-tertiary);
+  border-bottom: 1px solid var(--line-hairline);
+  white-space: nowrap;
+}
+
+.standings-table .col-rank {
+  width: 38px;
+  text-align: center;
+}
+
+.standings-table .col-player {
+  text-align: left;
+}
+
+.standings-table .col-pts,
+.standings-table .col-gd {
+  text-align: right;
+  width: 74px;
+}
+
+.standings-row {
+  transition: background-color 0.18s ease, opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.standings-row + .standings-row td {
+  border-top: 1px solid var(--line-hairline);
+}
+
+.standings-row:hover {
+  background: var(--bg-row-hover);
+}
+
+.standings-row td {
+  padding: 9px 8px;
+  vertical-align: middle;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 0.76rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-secondary);
+}
+
+.standings-row[data-rank="1"] .rank-badge {
+  background: var(--accent-gold-soft);
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.standings-row[data-rank="2"] .rank-badge {
+  background: var(--accent-silver-soft);
+  color: var(--ink-primary);
+  font-weight: 700;
+}
+
+.standings-row[data-rank="3"] .rank-badge {
+  background: var(--accent-bronze-soft);
+  color: var(--accent-bronze);
+  font-weight: 700;
+}
+
+.standings-player-name {
+  font-weight: 550;
+  color: var(--ink-primary);
+  letter-spacing: -0.01em;
+}
+
+.standings-pts-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.standings-pts-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: var(--bg-subtle);
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--ink-primary);
+}
+
+.standings-gd-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: var(--ink-secondary);
+}
+
+.standings-gd-cell.is-positive {
+  color: var(--accent-green);
+}
+
+.standings-gd-cell.is-negative {
+  color: var(--ink-tertiary);
+}
+
+/* Right Bottom-to-Top Pyramid Bracket Shell */
+.apple-pyramid-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pyramid-surface {
+  padding: clamp(20px, 2.2vw, 28px) clamp(20px, 2.6vw, 34px);
+}
+
+.pyramid-surface-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line-hairline);
+}
+
+.pyramid-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pyramid-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--accent-gold);
 }
 
+.pyramid-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-primary);
+}
+
+.pyramid-board {
+  position: relative;
+  min-width: 760px;
+  width: 100%;
+  padding: 6px 0 4px;
+}
+
+.pyramid-tiers {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+.pyramid-tier {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.pyramid-tier-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 8px;
+  border-right: 2px solid var(--line-hairline);
+}
+
+.pyramid-tier-step {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+
+.pyramid-tier-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.pyramid-tier.is-crown-tier .pyramid-tier-step {
+  color: var(--accent-gold);
+}
+
+.pyramid-tier.is-crown-tier .pyramid-tier-name {
+  color: var(--ink-primary);
+  font-weight: 700;
+}
+
+.pyramid-tier.is-crown-tier .pyramid-tier-label {
+  border-right-color: var(--accent-gold-border);
+}
+
+/* Exact mathematical horizontal midpoints across 4-col -> 2-col -> 1-col -> 1-col! */
+.pyramid-tier-slots {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+}
+
+.pyramid-tier-slots[data-slots="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.pyramid-tier-slots[data-slots="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.pyramid-tier-slots[data-slots="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pyramid-tier .match-card {
+  width: min(100%, 212px);
+}
+
+.pyramid-tier .finals-duel-card {
+  width: min(100%, 296px);
+}
+
+.pyramid-crown-card {
+  position: static;
+  transform: none;
+  width: min(100%, 248px);
+}
+
 /* ==========================================================================
-    Showcase Surface & Bracket Board
+    ORIGINAL OPTION: Showcase Surface & Symmetric 16/8-Team Bracket Board
    ========================================================================== */
 .apple-showcase-shell {
   display: flex;
@@ -354,7 +653,6 @@ button {
   margin: 0 auto;
 }
 
-/* Round Headers */
 .bracket-round-headers {
   display: grid;
   gap: 18px;
@@ -455,7 +753,6 @@ button {
   stroke: color-mix(in srgb, var(--accent-gold-bright) 68%, var(--line-connector));
 }
 
-/* Columns Grid */
 .bracket-columns {
   position: relative;
   z-index: 2;
@@ -493,7 +790,7 @@ button {
 }
 
 /* ==========================================================================
-    Matchup Card (Pure Team Name + Score, Zero Clutter)
+    Matchup Card & Championship Cards (Shared Apple Design Language)
    ========================================================================== */
 .match-card {
   background: var(--bg-elevated);
@@ -520,6 +817,7 @@ button {
   padding: 8px 12px;
   min-height: 36px;
   transition: background-color 0.2s ease, opacity 0.2s ease;
+  cursor: pointer;
 }
 
 .team-slot + .team-slot {
@@ -540,7 +838,7 @@ button {
   border-radius: 50%;
   flex: none;
   background: transparent;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .team-name {
@@ -569,7 +867,6 @@ button {
   color: var(--ink-secondary);
 }
 
-/* Winner / Loser / Pending Hierarchy */
 .team-slot.is-winner {
   background: color-mix(in srgb, var(--accent-blue) 4%, transparent);
 }
@@ -611,9 +908,7 @@ button {
   font-weight: 400;
 }
 
-/* ==========================================================================
-    Center Championship Column (Trophy + Side-by-Side Finals Duel like NBA Playoffs)
-   ========================================================================== */
+/* Center Championship Column */
 .bracket-col-center {
   position: relative;
   display: flex;
@@ -629,14 +924,13 @@ button {
   align-items: center;
 }
 
-/* Champion Trophy Card anchored right above the Finals Duel Card */
 .champion-crown-card {
   position: absolute;
   bottom: calc(100% + 18px);
   left: 50%;
   transform: translateX(-50%);
   width: min(100%, 236px);
-  padding: 14px 16px;
+  padding: 13px 16px;
   border-radius: 20px;
   background: var(--bg-elevated);
   border: 1px solid var(--line-card);
@@ -645,8 +939,14 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  gap: 4px;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease;
+}
+
+.champion-crown-card.pyramid-crown-card {
+  position: static;
+  transform: none;
+  width: min(100%, 252px);
 }
 
 .bracket-board[data-zone-view="center"] .champion-crown-card {
@@ -664,17 +964,17 @@ button {
 }
 
 .trophy-icon {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 10px;
   background: var(--accent-gold-soft);
   color: var(--accent-gold-bright);
 }
 
 .champion-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -682,7 +982,7 @@ button {
 }
 
 .champion-name {
-  font-size: 1.06rem;
+  font-size: 1.04rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--ink-primary);
@@ -698,22 +998,21 @@ button {
   font-size: 0.92rem;
 }
 
-/* Side-by-Side Horizontal Grand Finals Card (NBA Playoffs Center Style, Name + Score Only) */
 .finals-duel-card {
   width: 100%;
   background: var(--bg-elevated);
   border: 1px solid var(--line-card);
   border-radius: 20px;
   box-shadow: var(--shadow-finals);
-  padding: 14px;
+  padding: 13px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
 }
 
 .finals-duel-badge {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--ink-tertiary);
@@ -731,25 +1030,26 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 8px;
+  gap: 6px;
+  padding: 12px 8px;
   border-radius: 14px;
   background: var(--bg-subtle);
   border: 1px solid transparent;
   text-align: center;
   min-width: 0;
+  cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .finals-contender-zone {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 600;
   color: var(--ink-tertiary);
   letter-spacing: 0.04em;
 }
 
 .finals-contender-name {
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   font-weight: 650;
   color: var(--ink-primary);
   width: 100%;
@@ -759,7 +1059,7 @@ button {
 }
 
 .finals-contender-score {
-  font-size: 1.5rem;
+  font-size: 1.42rem;
   font-weight: 700;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
@@ -787,36 +1087,45 @@ button {
 }
 
 .finals-vs {
-   align-self: center;
-  font-size: 0.72rem;
+  align-self: center;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--ink-tertiary);
 }
 
 /* ==========================================================================
-    Interactive Team Journey Highlight (Hover / Tap any team)
+    Interactive Cross-Highlight (Standings Table <-> Pyramid / Symmetric Bracket)
    ========================================================================== */
-.bracket-board.is-highlighting .team-slot:not(.is-team-focus),
-.bracket-board.is-highlighting .finals-contender:not(.is-team-focus) {
-  opacity: 0.34;
+body.is-highlighting-player .standings-row:not(.is-team-focus) {
+  opacity: 0.38;
 }
 
-.bracket-board.is-highlighting .team-slot.is-team-focus {
+body.is-highlighting-player .standings-row.is-team-focus {
   background: var(--accent-blue-soft);
   opacity: 1;
 }
 
-.bracket-board.is-highlighting .finals-contender.is-team-focus {
+body.is-highlighting-player .team-slot:not(.is-team-focus),
+body.is-highlighting-player .finals-contender:not(.is-team-focus) {
+  opacity: 0.34;
+}
+
+body.is-highlighting-player .team-slot.is-team-focus {
+  background: var(--accent-blue-soft);
+  opacity: 1;
+}
+
+body.is-highlighting-player .finals-contender.is-team-focus {
   opacity: 1;
   border-color: var(--accent-blue);
 }
 
-.bracket-board.is-highlighting .bracket-connector:not(.is-path-focus) {
+body.is-highlighting-player .bracket-connector:not(.is-path-focus) {
   opacity: 0.22;
 }
 
-.bracket-board.is-highlighting .bracket-connector.is-path-focus {
+body.is-highlighting-player .bracket-connector.is-path-focus {
   stroke: var(--accent-blue);
   stroke-width: 2.5;
   opacity: 1;
@@ -832,6 +1141,12 @@ button {
 /* ==========================================================================
     Responsive Adjustments
    ========================================================================== */
+@media (max-width: 1120px) {
+  .pyramid-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 780px) {
   .apple-nav-inner {
     justify-content: center;
