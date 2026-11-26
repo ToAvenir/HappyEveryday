@@ -26,7 +26,7 @@
     const returning = !page.hidden && !isReset;
     page.hidden = !isReset;
     home.hidden = isReset;
-    document.title = isReset ? 'AI模型重置 · Happy everyday' : homeTitle;
+    document.title = isReset ? '重置预告 · Happy everyday' : homeTitle;
     if (entering) page.dispatchEvent(new Event('reset:enter'));
     if (inHistory) {
       historySection.scrollIntoView({ behavior: 'instant' });

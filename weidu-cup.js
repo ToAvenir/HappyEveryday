@@ -30,6 +30,71 @@
     if (el && text) el.textContent = text;
   };
 
+  const normKey = (name) => String(name || "").replace(/\s+/g, "").trim();
+
+  // Align 2-character Chinese names cleanly with 3-character Chinese names (exact 3em width)
+  function buildAlignedNameNode(rawName) {
+    const clean = normKey(rawName);
+    if (/^[\u4e00-\u9fff]{2,3}$/.test(clean)) {
+      const wrap = document.createElement("span");
+      wrap.className = "cjk-name-align";
+      Array.from(clean).forEach((ch) => {
+        const span = document.createElement("span");
+        span.textContent = ch;
+        wrap.appendChild(span);
+      });
+      return wrap;
+    }
+    const fallback = document.createElement("span");
+    fallback.textContent = String(rawName || "").trim();
+    return fallback;
+  }
+
+  // Parse single-game [a, b] or multi-game [[a1, b1], [a2, b2], ...] match score
+  function parseMatchScore(rec) {
+    if (!rec) return { hasScore: false, games: [], diff: null, winnerSide: 0 };
+    const raw = Array.isArray(rec.games) ? rec.games : rec.score;
+    const games = [];
+
+    if (Array.isArray(raw) && raw.length > 0) {
+      if (Array.isArray(raw[0])) {
+        raw.forEach((g) => {
+          if (Array.isArray(g) && g.length >= 2) {
+            const a = Number(g[0]);
+            const b = Number(g[1]);
+            if (Number.isFinite(a) && Number.isFinite(b)) {
+              games.push([a, b]);
+            }
+          }
+        });
+      } else if (raw.length >= 2) {
+        const a = Number(raw[0]);
+        const b = Number(raw[1]);
+        if (Number.isFinite(a) && Number.isFinite(b)) {
+          games.push([a, b]);
+        }
+      }
+    }
+
+    if (!games.length) {
+      return { hasScore: false, games: [], diff: null, winnerSide: 0 };
+    }
+
+    let winsA = 0;
+    let winsB = 0;
+    let diff = 0;
+    games.forEach(([a, b]) => {
+      if (a > b) winsA += 1;
+      else if (b > a) winsB += 1;
+      diff += a - b;
+    });
+
+    const winnerSide =
+      winsA > winsB ? 1 : winsB > winsA ? -1 : diff > 0 ? 1 : diff < 0 ? -1 : 0;
+
+    return { hasScore: true, games, diff, winnerSide };
+  }
+
   const leftZoneName = config.leftZoneName || "上半区";
   const rightZoneName = config.rightZoneName || "下半区";
   setText("nav-tournament-name", config.title || "第一届微度杯");
@@ -215,44 +280,67 @@
   }
 
   // ==========================================================================
-  // DATA BUILDER 1: NEW PYRAMID + PERSONAL STANDINGS
+  // DATA BUILDER 1: PYRAMID + PERSONAL STANDINGS (Supports 预备赛 & 正式赛)
   // ==========================================================================
-  const pCfg = config.pyramidStage || {};
-  const rawStandings = Array.isArray(pCfg.standings) ? pCfg.standings : [];
-  const standingsList = rawStandings.map((item, i) => ({
-    name: item && item.name ? String(item.name).trim() : `选手 ${i + 1}`,
-    points: Number.isFinite(Number(item && item.points)) ? Number(item.points) : 0,
-    goalDiff: Number.isFinite(Number(item && item.goalDiff)) ? Number(item.goalDiff) : 0
-  }));
+  const stageTabsEl = document.getElementById("tournament-stage-tabs");
+  const initialHashStage = window.location.hash === "#official" ? "official" : window.location.hash === "#preliminary" ? "preliminary" : null;
+  let activeStageKey =
+    initialHashStage || (config.defaultStage === "official" ? "official" : "preliminary");
 
-  if (pCfg.autoSortStandings !== false) {
-    standingsList.sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      return b.goalDiff - a.goalDiff;
+  let standingsList = [];
+  let pQuarters = [];
+  let pSemis = [];
+  let pFinal = null;
+  let activeStageCfg = {};
+
+  function buildPyramidStageData(stageKey) {
+    activeStageCfg =
+      stageKey === "official"
+        ? config.officialStage || {}
+        : config.pyramidStage || {};
+
+    const stageEyebrow = activeStageCfg.eyebrow || config.eyebrow || "WEIDU CUP · TOURNAMENT";
+    setText("bracket-eyebrow", stageEyebrow);
+
+    const rawStandings = Array.isArray(activeStageCfg.standings) ? activeStageCfg.standings : [];
+    standingsList = rawStandings.map((item, i) => ({
+      name: item && item.name ? String(item.name).trim() : `选手 ${i + 1}`,
+      points: Number.isFinite(Number(item && item.points)) ? Number(item.points) : 0,
+      goalDiff: Number.isFinite(Number(item && item.goalDiff)) ? Number(item.goalDiff) : 0
+    }));
+
+    if (activeStageCfg.autoSortStandings !== false) {
+      standingsList.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return b.goalDiff - a.goalDiff;
+      });
+    }
+
+    const pPlayers = Array.from({ length: 8 }, (_, idx) => {
+      const raw = Array.isArray(activeStageCfg.players) ? activeStageCfg.players[idx] : null;
+      return typeof raw === "string" && raw.trim() ? raw.trim() : null;
     });
+    const pScores = activeStageCfg.scores || {};
+    pQuarters = Array.from({ length: 4 }, (_, i) =>
+      resolveMatch(
+        `P-q-${i}`,
+        pPlayers[i * 2],
+        pPlayers[i * 2 + 1],
+        Array.isArray(pScores.quarter) ? pScores.quarter[i] : null
+      )
+    );
+    pSemis = Array.from({ length: 2 }, (_, i) =>
+      resolveMatch(
+        `P-s-${i}`,
+        pQuarters[i * 2].winner,
+        pQuarters[i * 2 + 1].winner,
+        Array.isArray(pScores.semi) ? pScores.semi[i] : null
+      )
+    );
+    pFinal = resolveMatch("P-GF", pSemis[0].winner, pSemis[1].winner, pScores.final);
   }
 
-  const pPlayers = Array.from({ length: 8 }, (_, idx) =>
-    Array.isArray(pCfg.players) && pCfg.players[idx] ? String(pCfg.players[idx]) : `待定选手 ${idx + 1}`
-  );
-  const pScores = pCfg.scores || {};
-  const pQuarters = Array.from({ length: 4 }, (_, i) =>
-    resolveMatch(
-      `P-q-${i}`,
-      pPlayers[i * 2],
-      pPlayers[i * 2 + 1],
-      Array.isArray(pScores.quarter) ? pScores.quarter[i] : null
-    )
-  );
-  const pSemis = Array.from({ length: 2 }, (_, i) =>
-    resolveMatch(
-      `P-s-${i}`,
-      pQuarters[i * 2].winner,
-      pQuarters[i * 2 + 1].winner,
-      Array.isArray(pScores.semi) ? pScores.semi[i] : null
-    )
-  );
-  const pFinal = resolveMatch("P-GF", pSemis[0].winner, pSemis[1].winner, pScores.final);
+  buildPyramidStageData(activeStageKey);
 
   function renderStandingsTable() {
     const tbody = document.getElementById("standings-tbody");
@@ -279,7 +367,7 @@
 
       const tdName = document.createElement("td");
       tdName.className = "col-player standings-player-name";
-      tdName.textContent = row.name;
+      tdName.appendChild(buildAlignedNameNode(row.name));
 
       const tdPts = document.createElement("td");
       tdPts.className = "col-pts standings-pts-cell";
@@ -296,6 +384,149 @@
       tdGd.textContent = gdFormatted;
 
       tr.append(tdRank, tdName, tdPts, tdGd);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function parsePairNames(rawPair) {
+    if (Array.isArray(rawPair)) {
+      return rawPair.map((n) => String(n || "").trim()).filter(Boolean);
+    }
+    if (typeof rawPair === "string" && rawPair.trim()) {
+      return rawPair.split(/[\/、,&+]/).map((n) => n.trim()).filter(Boolean);
+    }
+    return ["待定"];
+  }
+
+  function renderMatchRecords() {
+    const tbody = document.getElementById("match-records-tbody");
+    const countEl = document.getElementById("match-records-count");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const rawRecords = Array.isArray(activeStageCfg.matchRecords) ? activeStageCfg.matchRecords : [];
+    const finishedCount = rawRecords.filter((r) => parseMatchScore(r).hasScore).length;
+
+    if (countEl) {
+      countEl.textContent = rawRecords.length
+        ? `已完成 ${finishedCount} / ${rawRecords.length} 场`
+        : "暂无记录";
+    }
+
+    if (!rawRecords.length) {
+      const emptyTr = document.createElement("tr");
+      emptyTr.className = "match-record-empty-row";
+      const emptyTd = document.createElement("td");
+      emptyTd.colSpan = 4;
+      emptyTd.textContent = "暂无比赛记录";
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+      return;
+    }
+
+    rawRecords.forEach((rec) => {
+      if (!rec) return;
+      const tr = document.createElement("tr");
+      tr.className = "match-record-row";
+
+      // 1) 比赛时间
+      const tdTime = document.createElement("td");
+      tdTime.className = "col-mtime mtime-cell";
+      tdTime.textContent = rec.time ? String(rec.time) : "待定";
+
+      // Parse doubles players & score (supports single game and best-of-3 multi-game)
+      const pairA = parsePairNames(rec.teamA);
+      const pairB = parsePairNames(rec.teamB);
+      const { hasScore, games, diff, winnerSide } = parseMatchScore(rec);
+
+      // 2) 比赛人员（双打对阵 + 中间比分）
+      const tdPlayers = document.createElement("td");
+      tdPlayers.className = "col-mplayers";
+      const duel = document.createElement("div");
+      duel.className = "mplayers-duel";
+
+      const buildPairNode = (names, sideClass, stateClass) => {
+        const wrap = document.createElement("div");
+        wrap.className = `mpair ${sideClass}${stateClass ? ` ${stateClass}` : ""}`;
+        names.forEach((n) => {
+          const chip = document.createElement("span");
+          chip.className = "mplayer-chip";
+          chip.appendChild(buildAlignedNameNode(n));
+          if (n !== "待定") chip.dataset.teamName = n;
+          wrap.appendChild(chip);
+        });
+        return wrap;
+      };
+
+      const stateA = hasScore && winnerSide > 0 ? "is-pair-winner" : hasScore && winnerSide < 0 ? "is-pair-loser" : "";
+      const stateB = hasScore && winnerSide < 0 ? "is-pair-winner" : hasScore && winnerSide > 0 ? "is-pair-loser" : "";
+
+      let scoreNode;
+      if (!hasScore) {
+        scoreNode = document.createElement("span");
+        scoreNode.className = "mscore-pill is-pending";
+        scoreNode.textContent = "VS";
+      } else if (games.length === 1) {
+        scoreNode = document.createElement("span");
+        scoreNode.className = "mscore-pill";
+        scoreNode.textContent = `${games[0][0]} : ${games[0][1]}`;
+      } else {
+        scoreNode = document.createElement("div");
+        scoreNode.className = "mscore-group";
+        games.forEach(([ga, gb]) => {
+          const setPill = document.createElement("span");
+          setPill.className = "mscore-pill is-set";
+          setPill.textContent = `${ga} : ${gb}`;
+          scoreNode.appendChild(setPill);
+        });
+      }
+
+      duel.append(
+        buildPairNode(pairA, "mpair-left", stateA),
+        scoreNode,
+        buildPairNode(pairB, "mpair-right", stateB)
+      );
+      tdPlayers.appendChild(duel);
+
+      // 3) 比赛胜负
+      const tdResult = document.createElement("td");
+      tdResult.className = "col-mresult mresult-cell";
+      const resBadge = document.createElement("span");
+      resBadge.className = "mresult-badge";
+
+      if (typeof rec.result === "string" && rec.result.trim()) {
+        resBadge.textContent = rec.result.trim();
+      } else if (!hasScore) {
+        resBadge.classList.add("is-pending");
+        resBadge.textContent = "待开赛";
+      } else if (winnerSide > 0) {
+        resBadge.textContent = `${pairA.map((n) => n.replace(/\s+/g, "")).join(" / ")} 胜`;
+      } else if (winnerSide < 0) {
+        resBadge.textContent = `${pairB.map((n) => n.replace(/\s+/g, "")).join(" / ")} 胜`;
+      } else {
+        resBadge.classList.add("is-draw");
+        resBadge.textContent = "平局";
+      }
+      tdResult.appendChild(resBadge);
+
+      // 4) 净胜球（左组合 / 右组合 对应正负净胜分，方便直接核对个人净胜球）
+      const tdGd = document.createElement("td");
+      tdGd.className = "col-mgd mgd-cell";
+      if (typeof rec.goalDiff === "string" || typeof rec.goalDiff === "number") {
+        tdGd.textContent = String(rec.goalDiff);
+      } else if (!hasScore) {
+        tdGd.innerHTML = `<span class="mgd-neg">—</span>`;
+      } else if (diff === 0) {
+        tdGd.textContent = "0";
+      } else {
+        const leftStr = diff > 0 ? `+${diff}` : String(diff);
+        const rightStr = -diff > 0 ? `+${-diff}` : String(-diff);
+        const leftCls = diff > 0 ? "mgd-pos" : "mgd-neg";
+        const rightCls = -diff > 0 ? "mgd-pos" : "mgd-neg";
+        tdGd.innerHTML = `<span class="${leftCls}">${leftStr}</span><span class="mgd-sep">/</span><span class="${rightCls}">${rightStr}</span>`;
+      }
+
+      tr.append(tdTime, tdPlayers, tdResult, tdGd);
       tbody.appendChild(tr);
     });
   }
@@ -679,24 +910,32 @@
   // ==========================================================================
   const activeLayout = mode === "bracket" ? "symmetric" : "pyramid";
 
-  // Unified Cross-Highlight across Standings Table + Active Bracket
+  // Unified Cross-Highlight across Standings Table + Match Records + Active Bracket
   function clearHighlight() {
     document.body.classList.remove("is-highlighting-player");
     document.querySelectorAll(".is-team-focus").forEach((el) => el.classList.remove("is-team-focus"));
+    document.querySelectorAll(".has-team-focus").forEach((el) => el.classList.remove("has-team-focus"));
     document.querySelectorAll(".is-path-focus").forEach((el) => el.classList.remove("is-path-focus"));
   }
 
   function highlightPlayerOrTeam(name) {
-    if (!name) {
+    const targetKey = normKey(name);
+    if (!targetKey) {
       clearHighlight();
       return;
     }
     document.body.classList.add("is-highlighting-player");
+    document.querySelectorAll(".has-team-focus").forEach((el) => el.classList.remove("has-team-focus"));
     document.querySelectorAll("[data-team-name]").forEach((el) => {
+      const matched = normKey(el.dataset.teamName) === targetKey;
       if (el.classList.contains("bracket-connector")) {
-        el.classList.toggle("is-path-focus", el.dataset.teamName === name);
+        el.classList.toggle("is-path-focus", matched);
       } else {
-        el.classList.toggle("is-team-focus", el.dataset.teamName === name);
+        el.classList.toggle("is-team-focus", matched);
+        if (matched) {
+          const parentRow = el.closest(".match-record-row");
+          if (parentRow) parentRow.classList.add("has-team-focus");
+        }
       }
     });
   }
@@ -737,10 +976,18 @@
     if (viewPyramidEl) viewPyramidEl.hidden = !isPyramid;
     if (viewSymmetricEl) viewSymmetricEl.hidden = isPyramid;
     if (symmetricZoneTabsEl) symmetricZoneTabsEl.hidden = isPyramid;
+    if (stageTabsEl) stageTabsEl.hidden = !isPyramid;
 
     if (isPyramid) {
+      buildPyramidStageData(activeStageKey);
+      document.querySelectorAll("[data-stage-tab]").forEach((b) => {
+        const active = b.dataset.stageTab === activeStageKey;
+        b.classList.toggle("is-active", active);
+        b.setAttribute("aria-selected", String(active));
+      });
       renderStandingsTable();
       renderPyramidBracket();
+      renderMatchRecords();
     } else {
       renderSymmetricBracket();
     }
@@ -750,6 +997,109 @@
   }
 
   initActiveMode();
+
+  // Preliminary / Official stage switcher tabs (in top-left navbar beside 第一届微度杯)
+  document.querySelectorAll("[data-stage-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const nextStage = btn.dataset.stageTab === "official" ? "official" : "preliminary";
+      if (nextStage === activeStageKey) return;
+      activeStageKey = nextStage;
+      if (history.replaceState) {
+        history.replaceState(null, "", nextStage === "official" ? "#official" : "#preliminary");
+      }
+      initActiveMode();
+    });
+  });
+
+  // Scoring Rules Modal initialization & open/close interactions
+  const rulesBtn = document.getElementById("apple-rules-toggle");
+  const rulesModal = document.getElementById("cup-rules-modal");
+  const rulesCloseBtn = document.getElementById("cup-rules-close");
+  const rulesConfirmBtn = document.getElementById("cup-rules-confirm");
+  const rulesListEl = document.getElementById("cup-rules-list");
+
+  const defaultRules = [
+    {
+      label: "单局制计分",
+      detail: "当只有一局比赛时，胜者双方个人积分各 +2，负者不加分（+0）；净胜球按照本局实际分差为每位成员填写。"
+    },
+    {
+      label: "三局两胜制计分",
+      detail: "当采用三局两胜制时，胜者双方个人积分各 +2，负者不加分（+0）；净胜球按照各局分差的累积为每位成员填写。"
+    },
+    {
+      label: "榜单排序规则",
+      detail: "个人积分榜按个人积分从高到低排列；积分相同时，按累计净胜球从高到低排列。"
+    }
+  ];
+
+  function renderRulesModalContent() {
+    if (!rulesListEl) return;
+    const rCfg = config.rules || {};
+    if (rCfg.eyebrow) setText("cup-rules-eyebrow", rCfg.eyebrow);
+    if (rCfg.title) setText("cup-rules-title", rCfg.title);
+    const items = Array.isArray(rCfg.items) && rCfg.items.length ? rCfg.items : defaultRules;
+
+    rulesListEl.innerHTML = "";
+    items.forEach((item, idx) => {
+      const li = document.createElement("li");
+      li.className = "apple-rule-item";
+
+      const num = document.createElement("span");
+      num.className = "apple-rule-num";
+      num.textContent = String(idx + 1);
+
+      const body = document.createElement("div");
+      body.className = "apple-rule-body";
+
+      const label = document.createElement("div");
+      label.className = "apple-rule-label";
+      label.textContent = item && item.label ? String(item.label) : `规则 ${idx + 1}`;
+
+      const detail = document.createElement("p");
+      detail.className = "apple-rule-detail";
+      detail.textContent = item && item.detail ? String(item.detail) : "";
+
+      body.append(label, detail);
+      li.append(num, body);
+      rulesListEl.appendChild(li);
+    });
+  }
+
+  renderRulesModalContent();
+
+  function openRulesModal() {
+    if (!rulesModal) return;
+    rulesModal.hidden = false;
+    document.body.style.overflow = "hidden";
+    if (rulesCloseBtn) rulesCloseBtn.focus();
+  }
+
+  function closeRulesModal() {
+    if (!rulesModal || rulesModal.hidden) return;
+    rulesModal.hidden = true;
+    document.body.style.overflow = "";
+    if (rulesBtn) rulesBtn.focus();
+  }
+
+  if (rulesBtn) {
+    rulesBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openRulesModal();
+    });
+  }
+  if (rulesCloseBtn) rulesCloseBtn.addEventListener("click", closeRulesModal);
+  if (rulesConfirmBtn) rulesConfirmBtn.addEventListener("click", closeRulesModal);
+  if (rulesModal) {
+    rulesModal.addEventListener("click", (e) => {
+      if (e.target === rulesModal) closeRulesModal();
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && rulesModal && !rulesModal.hidden) {
+      closeRulesModal();
+    }
+  });
 
   // Symmetric view zone filter tabs (only visible when mode === "bracket")
   document.querySelectorAll("[data-zone-filter]").forEach((btn) => {

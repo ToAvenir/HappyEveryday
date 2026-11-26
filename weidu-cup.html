@@ -44,6 +44,10 @@
             <img class="apple-brand-mark" src="happy-everyday-mark.png" alt="" width="24" height="24">
             <span class="apple-nav-brand" id="nav-tournament-name">第一届微度杯</span>
           </div>
+          <div class="apple-segmented apple-stage-tabs" id="tournament-stage-tabs" role="tablist" aria-label="赛事阶段切换">
+            <button type="button" class="apple-seg-btn is-active" role="tab" aria-selected="true" data-stage-tab="preliminary">预备赛</button>
+            <button type="button" class="apple-seg-btn" role="tab" aria-selected="false" data-stage-tab="official">正式赛</button>
+          </div>
         </div>
 
         <div class="apple-nav-right">
@@ -57,6 +61,9 @@
 
           <button type="button" class="apple-theme-btn" id="apple-theme-toggle" aria-label="切换浅色或深色外观">
             <span id="apple-theme-label">浅色外观</span>
+          </button>
+          <button type="button" class="apple-theme-btn apple-rules-btn" id="apple-rules-toggle" aria-haspopup="dialog" aria-controls="cup-rules-modal">
+            <span>规则</span>
           </button>
         </div>
       </div>
@@ -110,7 +117,30 @@
               </div>
             </div>
           </div>
-          <p class="apple-footnote">提示：悬停或轻触左侧积分榜姓名或右侧对阵选手，可联动高亮该选手的排名与晋级路径。</p>
+
+          <section class="apple-bracket-surface match-records-surface" aria-labelledby="match-records-title">
+            <div class="match-records-header">
+              <div>
+                <p class="standings-eyebrow">MATCH SCHEDULE &amp; RESULTS</p>
+                <h2 class="standings-title" id="match-records-title">双打比赛赛程与战报</h2>
+              </div>
+              <span class="standings-meta" id="match-records-count"></span>
+            </div>
+
+            <div class="match-records-table-wrap">
+              <table class="match-records-table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="col-mtime">比赛时间</th>
+                    <th scope="col" class="col-mplayers">比赛人员（双打对阵）</th>
+                    <th scope="col" class="col-mresult">比赛胜负</th>
+                    <th scope="col" class="col-mgd">净胜球</th>
+                  </tr>
+                </thead>
+                <tbody id="match-records-tbody"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -130,6 +160,27 @@
         <p class="apple-footnote">提示：将鼠标悬停或轻触任意队伍名称，可高亮追踪该队伍的完整晋级轨迹。</p>
       </section>
     </main>
+
+    <!-- 记分规则弹窗 -->
+    <div class="apple-modal-backdrop" id="cup-rules-modal" role="dialog" aria-modal="true" aria-labelledby="cup-rules-title" hidden>
+      <div class="apple-modal-card">
+        <div class="apple-modal-header">
+          <div>
+            <p class="apple-modal-eyebrow" id="cup-rules-eyebrow">SCORING &amp; RANKING RULES</p>
+            <h2 class="apple-modal-title" id="cup-rules-title">本局记分与排名规则</h2>
+          </div>
+          <button type="button" class="apple-modal-close" id="cup-rules-close" aria-label="关闭规则弹窗">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <ol class="apple-rules-list" id="cup-rules-list"></ol>
+        <div class="apple-modal-footer">
+          <button type="button" class="apple-modal-primary-btn" id="cup-rules-confirm">我知道了</button>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>

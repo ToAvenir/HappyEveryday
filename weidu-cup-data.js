@@ -15,39 +15,61 @@ const weiduCupData = {
   //    "light" -> 浅色外观
   defaultTheme: "dark",
 
-  // 3. 赛事标题信息
+  // 3. 赛事标题与默认阶段（"preliminary" -> 预备赛，"official" -> 正式赛）
   eyebrow: "WEIDU CUP · TOURNAMENT",
   title: "第一届微度杯",
+  defaultStage: "preliminary",
+
+  // 4. 右上角「规则」按钮弹窗内容
+  rules: {
+    eyebrow: "SCORING & RANKING RULES",
+    title: "本局记分与排名规则",
+    items: [
+      {
+        label: "单局制计分",
+        detail: "当只有一局比赛时，胜者双方个人积分各 +2，负者不加分（+0）；净胜球按照本局实际分差为每位成员填写（胜方为正、负方为负）。"
+      },
+      {
+        label: "三局两胜制计分",
+        detail: "当采用三局两胜制时，先赢两局者获胜，胜者双方个人积分各 +2，负者不加分（+0）；净胜球按照所打各局的分差累积为每位成员填写。"
+      },
+      {
+        label: "榜单排序规则",
+        detail: "个人积分榜按照个人积分从高到低排列；当个人积分相同时，按照累计净胜球从高到低排列。"
+      }
+    ]
+  },
 
   // ==========================================================================
-  // 【当 mode: "pyramid" 时生效】左侧个人积分表 + 右侧从下到上 8 强晋级
+  // 【预备赛数据】（当顶部切换为「预备赛」且 mode: "pyramid" 时显示）
   // ==========================================================================
   pyramidStage: {
+    eyebrow: "WEIDU CUP · PRELIMINARY STAGE",
     // 是否按「个人积分从高到低 → 净胜球从高到低」自动排序积分榜（设为 false 则按你写的顺序显示）
     autoSortStandings: true,
 
     // 左侧个人积分表（包含：姓名 name、个人积分 points、净胜球 goalDiff）
     standings: [
-      { name: "郭  锐", points: 0, goalDiff: 0 },
-      { name: "柳冠豪", points: 0, goalDiff: 0 },
+      { name: "鲁建宇", points: 8, goalDiff: 27 },
+      { name: "刘烨昊", points: 6, goalDiff: 22 },
+      { name: "李建翔", points: 6, goalDiff: 19 },
+      { name: "夏赣民", points: 6, goalDiff: 13 },
+      { name: "勾陆昊", points: 6, goalDiff: 8 },
+      { name: "张晨光", points: 6, goalDiff: 3 },
+      { name: "朱玥玖", points: 4, goalDiff: 11 },
+      { name: "王宇", points: 4, goalDiff: 1 },
+      { name: "伍智帅", points: 4, goalDiff: -6 },
+      { name: "王哲", points: 4, goalDiff: -12 },
+      { name: "郭锐", points: 2, goalDiff: -5 },
+      { name: "韩智敏", points: 2, goalDiff: -8 },
+      { name: "段志刚", points: 2, goalDiff: -11 },
+      { name: "何梦洁", points: 2, goalDiff: -11 },
+      { name: "任雨晴", points: 2, goalDiff: -13 },
+      { name: "孙子琛", points: 2, goalDiff: -15 },
+      { name: "柳冠豪", points: 2, goalDiff: -18 },
       { name: "薛伟钊", points: 0, goalDiff: 0 },
-      { name: "李建翔", points: 0, goalDiff: 0 },
-      { name: "鲁建宇", points: 0, goalDiff: 0 },
-      { name: "张晨光", points: 0,  goalDiff: 0 },
-      { name: "段志刚", points: 0,  goalDiff: 0 },
-      { name: "韩智敏", points: 0,  goalDiff: 0 },
-      { name: "刘烨昊", points: 0,  goalDiff: 0 },
-      { name: "何梦洁", points: 0,  goalDiff: 0 },
-      { name: "王  哲", points: 0,  goalDiff: 0 },
-      { name: "任雨晴", points: 0,  goalDiff: 0 },
-      { name: "朱玥玖", points: 0,  goalDiff: 0 },
-      { name: "伍智帅", points: 0,  goalDiff: 0 },
-      { name: "勾陆昊", points: 0,  goalDiff: 0 },
-      { name: "孙子琛", points: 0,  goalDiff: 0 },
-      { name: "夏赣民", points: 0,  goalDiff: 0 },
-      { name: "王  玮", points: 0,  goalDiff: 0 },
-      { name: "范向阳", points: 0,  goalDiff: 0 },
-      { name: "王  宇", points: 0,  goalDiff: 0 }
+      { name: "王玮", points: 0, goalDiff: 0 },
+      { name: "范向阳", points: 0, goalDiff: -5 }
     ],
 
     // 右侧从下到上晋级图的 8 位参赛姓名（仅需名字，无需图标）
@@ -77,7 +99,164 @@ const weiduCupData = {
       // 次顶层：总决赛（共 1 场）：[左半边胜者得分, 右半边胜者得分]
       // 若尚未完赛填 null，最顶层奖杯会自动显示「冠军虚位以待」
       final: [4, 2]
-    }
+    },
+
+    // 右下方：双打比赛记录表（包含：比赛时间、比赛人员、比赛胜负、净胜球）
+    // 填写说明：
+    // - time：比赛时间（如 "2026.11.26"）
+    // - teamA / teamB：对阵双方的双打搭档姓名（填 ["选手1", "选手2"]）
+    // - score：单局填 [A组得分, B组得分]；三局两胜填 [[第1局A, 第1局B], [第2局A, 第2局B], ...]
+    //          系统会自动按局数判定「比赛胜负」并累加计算双方「净胜球」；未开赛填 null
+    // - 如需手动指定文字，也可额外加 result: "自定义胜负" 或 goalDiff: "+5"
+    matchRecords: [
+      {
+        time: "2026.11.26",
+        teamA: ["勾陆昊", "郭锐"],
+        teamB: ["鲁建宇", "伍智帅"],
+        score: [6, 11]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["朱玥玖", "王哲"],
+        teamB: ["韩智敏", "何梦洁"],
+        score: [11, 9]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["孙子琛", "柳冠豪"],
+        teamB: ["王宇", "张晨光"],
+        score: [4, 11]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["李建翔", "任雨晴"],
+        teamB: ["刘烨昊", "夏赣民"],
+        score: [4, 11]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["勾陆昊", "段志刚"],
+        teamB: ["朱玥玖", "郭锐"],
+        score: [14, 12]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["勾陆昊", "李建翔"],
+        teamB: ["伍智帅", "王宇"],
+        score: [11, 4]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["何梦洁", "夏赣民"],
+        teamB: ["韩智敏", "王哲"],
+        score: [11, 4]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["张晨光", "孙子琛"],
+        teamB: ["刘烨昊", "柳冠豪"],
+        score: [11, 7]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["李建翔", "王宇"],
+        teamB: ["何梦洁", "张晨光"],
+        score: [[11, 7], [11, 3]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["段志刚", "郭锐"],
+        teamB: ["任雨晴", "鲁建宇"],
+        score: [9, 11]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["柳冠豪", "夏赣民"],
+        teamB: ["李建翔", "伍智帅"],
+        score: [[7, 11], [4, 11]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["刘烨昊", "王哲"],
+        teamB: ["孙子琛", "任雨晴"],
+        score: [[14, 12], [11, 5]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["鲁建宇", "韩智敏"],
+        teamB: ["夏赣民", "范向阳"],
+        score: [[11, 9], [11, 8]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["段志刚", "王宇"],
+        teamB: ["刘烨昊", "朱玥玖"],
+        score: [[8, 11], [3, 11]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["郭锐", "张晨光"],
+        teamB: ["何梦洁", "孙子琛"],
+        score: [[12, 10], [12, 10]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["伍智帅", "王哲"],
+        teamB: ["鲁建宇", "夏赣民"],
+        score: [[4, 11], [3, 11]]
+      },
+      {
+        time: "2026.11.26",
+        teamA: ["柳冠豪", "勾陆昊"],
+        teamB: ["韩智敏", "李建翔"],
+        score: [[11, 8], [10, 12], [11, 8]]
+      }
+    ]
+  },
+
+  // ==========================================================================
+  // 【正式赛数据】（当顶部切换为「正式赛」时显示，结构与预备赛完全一致，数据已清空）
+  // ==========================================================================
+  officialStage: {
+    eyebrow: "WEIDU CUP · OFFICIAL TOURNAMENT",
+    autoSortStandings: true,
+
+    // 左侧个人积分表（初始全员 0 积分、0 净胜球）
+    standings: [
+      { name: "郭锐", points: 0, goalDiff: 0 },
+      { name: "柳冠豪", points: 0, goalDiff: 0 },
+      { name: "薛伟钊", points: 0, goalDiff: 0 },
+      { name: "李建翔", points: 0, goalDiff: 0 },
+      { name: "鲁建宇", points: 0, goalDiff: 0 },
+      { name: "张晨光", points: 0, goalDiff: 0 },
+      { name: "段志刚", points: 0, goalDiff: 0 },
+      { name: "韩智敏", points: 0, goalDiff: 0 },
+      { name: "刘烨昊", points: 0, goalDiff: 0 },
+      { name: "何梦洁", points: 0, goalDiff: 0 },
+      { name: "王哲", points: 0, goalDiff: 0 },
+      { name: "任雨晴", points: 0, goalDiff: 0 },
+      { name: "朱玥玖", points: 0, goalDiff: 0 },
+      { name: "伍智帅", points: 0, goalDiff: 0 },
+      { name: "勾陆昊", points: 0, goalDiff: 0 },
+      { name: "孙子琛", points: 0, goalDiff: 0 },
+      { name: "夏赣民", points: 0, goalDiff: 0 },
+      { name: "王玮", points: 0, goalDiff: 0 },
+      { name: "范向阳", points: 0, goalDiff: 0 },
+      { name: "王宇", points: 0, goalDiff: 0 }
+    ],
+
+    // 右侧八强淘汰晋级图参赛名单（留空时自动显示「待定」）
+    players: [],
+
+    // 右侧八强各轮比分（未开赛填 null）
+    scores: {
+      quarter: [null, null, null, null],
+      semi: [null, null],
+      final: null
+    },
+
+    // 右下方双打比赛赛程与战报（正式赛开打后按预备赛相同格式添加即可）
+    matchRecords: []
   },
 
   // ==========================================================================

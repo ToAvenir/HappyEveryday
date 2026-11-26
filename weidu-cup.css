@@ -152,6 +152,7 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .apple-back-link {
@@ -251,6 +252,176 @@ button {
   box-shadow: var(--shadow-card);
 }
 
+.apple-stage-tabs {
+  margin-left: 2px;
+}
+
+/* ==========================================================================
+    Scoring Rules Modal (Apple Sheet / Dialog)
+   ========================================================================== */
+.apple-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.44);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: apple-modal-fade 0.18s ease-out;
+}
+
+.apple-modal-card {
+  width: min(100%, 500px);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-card);
+  border-radius: 26px;
+  box-shadow: var(--shadow-finals);
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: apple-modal-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.apple-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-hairline);
+}
+
+.apple-modal-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-blue);
+}
+
+.apple-modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-primary);
+}
+
+.apple-modal-close {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--bg-subtle);
+  color: var(--ink-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.apple-modal-close:hover {
+  background: var(--bg-seg);
+  color: var(--ink-primary);
+}
+
+.apple-rules-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apple-rule-item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--line-hairline);
+}
+
+.apple-rule-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--accent-blue-soft);
+  color: var(--accent-blue);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.apple-rule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.apple-rule-label {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--ink-primary);
+}
+
+.apple-rule-detail {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--ink-secondary);
+}
+
+.apple-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.apple-modal-primary-btn {
+  border: 0;
+  background: var(--accent-blue);
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 980px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: filter 0.18s ease, transform 0.18s ease;
+}
+
+.apple-modal-primary-btn:hover {
+  filter: brightness(1.08);
+}
+
+@keyframes apple-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes apple-modal-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.match-record-empty-row td {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--ink-tertiary);
+  font-size: 0.86rem;
+}
+
 /* ==========================================================================
     Apple Product Showcase Hero Section
    ========================================================================== */
@@ -294,7 +465,7 @@ button {
 .pyramid-workspace {
   display: grid;
   grid-template-columns: minmax(300px, 356px) minmax(0, 1fr);
-  align-items: start;
+  align-items: stretch;
   gap: clamp(18px, 2vw, 26px);
 }
 
@@ -430,7 +601,15 @@ button {
 .standings-player-name {
   font-weight: 550;
   color: var(--ink-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.cjk-name-align {
+  display: inline-flex;
+  justify-content: space-between;
+  width: 3em;
+  letter-spacing: 0;
 }
 
 .standings-pts-cell {
@@ -472,8 +651,231 @@ button {
 .apple-pyramid-shell {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(18px, 2vw, 24px);
   min-width: 0;
+}
+
+/* Bottom-Right Doubles Match Records Card */
+.match-records-surface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(20px, 2.2vw, 26px) clamp(20px, 2.6vw, 34px);
+}
+
+.match-records-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line-hairline);
+}
+
+.match-records-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 360px;
+}
+
+.match-records-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.match-records-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-surface);
+  padding: 8px 10px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-tertiary);
+  border-bottom: 1px solid var(--line-hairline);
+  white-space: nowrap;
+}
+
+.match-records-table .col-mtime {
+  text-align: left;
+  width: 136px;
+}
+
+.match-records-table .col-mplayers {
+  text-align: center;
+}
+
+.match-records-table .col-mresult {
+  text-align: center;
+  width: 178px;
+}
+
+.match-records-table .col-mgd {
+  text-align: right;
+  width: 112px;
+}
+
+.match-record-row + .match-record-row td {
+  border-top: 1px solid var(--line-hairline);
+}
+
+.match-record-row {
+  transition: background-color 0.18s ease, opacity 0.2s ease;
+}
+
+.match-record-row:hover {
+  background: var(--bg-row-hover);
+}
+
+.match-record-row td {
+  padding: 11px 10px;
+  vertical-align: middle;
+}
+
+.mtime-cell {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-secondary);
+  font-size: 0.83rem;
+  white-space: nowrap;
+}
+
+.mplayers-duel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.mpair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mpair-left {
+  justify-content: flex-end;
+}
+
+.mpair-right {
+  justify-content: flex-start;
+}
+
+.mplayer-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid transparent;
+  color: var(--ink-primary);
+  font-size: 0.84rem;
+  font-weight: 500;
+  white-space: pre;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, opacity 0.2s ease;
+}
+
+.mpair.is-pair-winner .mplayer-chip {
+  background: var(--accent-blue-soft);
+  color: var(--accent-blue);
+  font-weight: 650;
+}
+
+.mpair.is-pair-loser .mplayer-chip {
+  color: var(--ink-loser);
+  background: transparent;
+}
+
+.mscore-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.mscore-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 4px 10px;
+  border-radius: 980px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-card);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--ink-primary);
+  white-space: nowrap;
+}
+
+.mscore-pill.is-set {
+  min-width: 58px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+}
+
+.mscore-pill.is-pending {
+  color: var(--ink-tertiary);
+  font-weight: 500;
+  font-size: 0.78rem;
+}
+
+.mresult-cell {
+  text-align: center;
+}
+
+.mresult-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 11px;
+  border-radius: 980px;
+  font-size: 0.79rem;
+  font-weight: 600;
+  background: var(--accent-blue-soft);
+  color: var(--accent-blue);
+  white-space: nowrap;
+}
+
+.mresult-badge.is-pending {
+  background: var(--bg-subtle);
+  color: var(--ink-tertiary);
+  font-weight: 500;
+}
+
+.mresult-badge.is-draw {
+  background: var(--bg-subtle);
+  color: var(--ink-secondary);
+}
+
+.mgd-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.mgd-pos {
+  color: var(--accent-green);
+}
+
+.mgd-neg {
+  color: var(--ink-tertiary);
+}
+
+.mgd-sep {
+  margin: 0 4px;
+  color: var(--ink-tertiary);
+  font-weight: 400;
 }
 
 .pyramid-surface {
@@ -1107,8 +1509,20 @@ body.is-highlighting-player .standings-row.is-team-focus {
 }
 
 body.is-highlighting-player .team-slot:not(.is-team-focus),
-body.is-highlighting-player .finals-contender:not(.is-team-focus) {
+body.is-highlighting-player .finals-contender:not(.is-team-focus),
+body.is-highlighting-player .mplayer-chip:not(.is-team-focus) {
   opacity: 0.34;
+}
+
+body.is-highlighting-player .match-record-row:not(.has-team-focus) {
+  opacity: 0.42;
+}
+
+body.is-highlighting-player .mplayer-chip.is-team-focus {
+  background: var(--accent-blue-soft);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  opacity: 1;
 }
 
 body.is-highlighting-player .team-slot.is-team-focus {
@@ -1160,7 +1574,7 @@ body.is-highlighting-player .bracket-connector.is-path-focus {
   }
   .apple-nav-right {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
   .apple-seg-btn {
     padding: 5px 10px;
