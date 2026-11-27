@@ -40,18 +40,17 @@ const weiduCupData = {
     ]
   },
 
-  // 5. 顶部「光影回忆」相册配置
-  //    支持两种方式添加照片：
-  //    方式 A（网页直接上传）：打开页面点击顶部「光影回忆」->「上传照片」，自动保存在当前浏览器中；
-  //    方式 B（全员公开部署）：把照片放入 dist/memories/ 文件夹，并在下方 items 数组中添加路径与寄语。
+  // 5. 顶部「精彩瞬间」照片展示配置
+  //    之后有了精彩的比赛照片，只需将图片放入 dist/memories/ 文件夹，
+  //    并在下方 items 数组中按示例添加路径、照片说明与日期，保存后全员即可浏览大图。
   memories: {
-    buttonLabel: "光影回忆",
-    eyebrow: "CHERISHED MEMORIES · 第一届微度杯",
-    title: "那些挥拍与欢笑的瞬间",
-    subtitle: "比分会翻篇，但并肩流汗、击掌大笑的每一刻都值得永久珍藏。",
+    buttonLabel: "精彩瞬间",
+    eyebrow: "TOURNAMENT HIGHLIGHTS · 第一届微度杯",
+    title: "赛场精彩瞬间",
+    subtitle: "定格每一场挥拍拼搏与欢呼击掌的高光时刻。",
     items: [
-      // 示例（取消注释并放入对应图片即可全员可见）：
-      // { src: "memories/photo-1.jpg", caption: "第一届微度杯全员大合照", date: "2026.11.26" }
+      // 示例（放入图片后取消注释即可展示）：
+      // { src: "memories/photo-1.jpg", caption: "第一届微度杯精彩抓拍", date: "2026.11.27" }
     ]
   },
 
@@ -63,28 +62,29 @@ const weiduCupData = {
     // 是否按「个人积分从高到低 → 净胜球从高到低」自动排序积分榜（设为 false 则按你写的顺序显示）
     autoSortStandings: true,
 
-    // 左侧个人积分表（包含：姓名 name、个人积分 points、净胜球 goalDiff）
+    // 左侧个人积分表（包含：姓名 name、胜场 wins、负场 losses、个人积分 points、净胜球 goalDiff）
+    // 注：若不填 wins / losses，系统也会根据下方 matchRecords 自动统计几胜几负
     standings: [
-      { name: "鲁建宇", points: 8, goalDiff: 27 },
-      { name: "刘烨昊", points: 6, goalDiff: 22 },
-      { name: "李建翔", points: 6, goalDiff: 19 },
-      { name: "夏赣民", points: 6, goalDiff: 13 },
-      { name: "勾陆昊", points: 6, goalDiff: 8 },
-      { name: "张晨光", points: 6, goalDiff: 3 },
-      { name: "朱玥玖", points: 4, goalDiff: 11 },
-      { name: "王宇", points: 4, goalDiff: 1 },
-      { name: "伍智帅", points: 4, goalDiff: -6 },
-      { name: "王哲", points: 4, goalDiff: -12 },
-      { name: "郭锐", points: 2, goalDiff: -5 },
-      { name: "韩智敏", points: 2, goalDiff: -8 },
-      { name: "段志刚", points: 2, goalDiff: -11 },
-      { name: "何梦洁", points: 2, goalDiff: -11 },
-      { name: "任雨晴", points: 2, goalDiff: -13 },
-      { name: "孙子琛", points: 2, goalDiff: -15 },
-      { name: "柳冠豪", points: 2, goalDiff: -18 },
-      { name: "薛伟钊", points: 0, goalDiff: 0 },
-      { name: "王玮", points: 0, goalDiff: 0 },
-      { name: "范向阳", points: 0, goalDiff: -5 }
+      { name: "鲁建宇", wins: 4, losses: 0, points: 8, goalDiff: 27 },
+      { name: "刘烨昊", wins: 3, losses: 1, points: 6, goalDiff: 22 },
+      { name: "李建翔", wins: 3, losses: 2, points: 6, goalDiff: 19 },
+      { name: "夏赣民", wins: 3, losses: 2, points: 6, goalDiff: 13 },
+      { name: "勾陆昊", wins: 3, losses: 1, points: 6, goalDiff: 8 },
+      { name: "张晨光", wins: 3, losses: 1, points: 6, goalDiff: 3 },
+      { name: "朱玥玖", wins: 2, losses: 1, points: 4, goalDiff: 11 },
+      { name: "王宇",   wins: 2, losses: 2, points: 4, goalDiff: 1 },
+      { name: "伍智帅", wins: 2, losses: 2, points: 4, goalDiff: -6 },
+      { name: "王哲",   wins: 2, losses: 2, points: 4, goalDiff: -12 },
+      { name: "郭锐",   wins: 1, losses: 3, points: 2, goalDiff: -5 },
+      { name: "韩智敏", wins: 1, losses: 3, points: 2, goalDiff: -8 },
+      { name: "段志刚", wins: 1, losses: 2, points: 2, goalDiff: -11 },
+      { name: "何梦洁", wins: 1, losses: 3, points: 2, goalDiff: -11 },
+      { name: "任雨晴", wins: 1, losses: 2, points: 2, goalDiff: -13 },
+      { name: "孙子琛", wins: 1, losses: 3, points: 2, goalDiff: -15 },
+      { name: "柳冠豪", wins: 1, losses: 3, points: 2, goalDiff: -18 },
+      { name: "薛伟钊", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "王玮",   wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "范向阳", wins: 0, losses: 1, points: 0, goalDiff: -5 }
     ],
 
     // 右侧从下到上晋级图的 8 位参赛姓名（仅需名字，无需图标）
@@ -236,28 +236,28 @@ const weiduCupData = {
     eyebrow: "WEIDU CUP · OFFICIAL TOURNAMENT",
     autoSortStandings: true,
 
-    // 左侧个人积分表（初始全员 0 积分、0 净胜球）
+    // 左侧个人积分表（初始全员 0胜0负、0积分、0净胜球）
     standings: [
-      { name: "郭锐", points: 0, goalDiff: 0 },
-      { name: "柳冠豪", points: 0, goalDiff: 0 },
-      { name: "薛伟钊", points: 0, goalDiff: 0 },
-      { name: "李建翔", points: 0, goalDiff: 0 },
-      { name: "鲁建宇", points: 0, goalDiff: 0 },
-      { name: "张晨光", points: 0, goalDiff: 0 },
-      { name: "段志刚", points: 0, goalDiff: 0 },
-      { name: "韩智敏", points: 0, goalDiff: 0 },
-      { name: "刘烨昊", points: 0, goalDiff: 0 },
-      { name: "何梦洁", points: 0, goalDiff: 0 },
-      { name: "王哲", points: 0, goalDiff: 0 },
-      { name: "任雨晴", points: 0, goalDiff: 0 },
-      { name: "朱玥玖", points: 0, goalDiff: 0 },
-      { name: "伍智帅", points: 0, goalDiff: 0 },
-      { name: "勾陆昊", points: 0, goalDiff: 0 },
-      { name: "孙子琛", points: 0, goalDiff: 0 },
-      { name: "夏赣民", points: 0, goalDiff: 0 },
-      { name: "王玮", points: 0, goalDiff: 0 },
-      { name: "范向阳", points: 0, goalDiff: 0 },
-      { name: "王宇", points: 0, goalDiff: 0 }
+      { name: "郭锐",   wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "柳冠豪", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "薛伟钊", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "李建翔", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "鲁建宇", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "张晨光", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "段志刚", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "韩智敏", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "刘烨昊", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "何梦洁", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "王哲",   wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "任雨晴", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "朱玥玖", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "伍智帅", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "勾陆昊", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "孙子琛", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "夏赣民", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "王玮",   wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "范向阳", wins: 0, losses: 0, points: 0, goalDiff: 0 },
+      { name: "王宇",   wins: 0, losses: 0, points: 0, goalDiff: 0 }
     ],
 
     // 右侧八强淘汰晋级图参赛名单（留空时自动显示「待定」）

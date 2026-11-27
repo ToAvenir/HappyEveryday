@@ -286,7 +286,7 @@
   // ==========================================================================
   const stageTabsEl = document.getElementById("tournament-stage-tabs");
   const initialHash = window.location.hash;
-  let isMemoriesView = initialHash === "#memories";
+  let isMemoriesView = initialHash === "#highlights" || initialHash === "#memories";
   const initialHashStage = initialHash === "#official" ? "official" : initialHash === "#preliminary" ? "preliminary" : null;
   let activeStageKey =
     initialHashStage || (config.defaultStage === "official" ? "official" : "preliminary");
@@ -306,32 +306,63 @@
     const stageEyebrow = activeStageCfg.eyebrow || config.eyebrow || "WEIDU CUP · TOURNAMENT";
     setText("bracket-eyebrow", stageEyebrow);
 
-    // Auto-count completed matches per player from matchRecords
+    // Auto-count completed matches, wins, and losses per player from matchRecords
     const playedCountMap = new Map();
+    const winsCountMap = new Map();
+    const lossesCountMap = new Map();
     const rawStageRecords = Array.isArray(activeStageCfg.matchRecords) ? activeStageCfg.matchRecords : [];
     rawStageRecords.forEach((rec) => {
-      if (!rec || !parseMatchScore(rec).hasScore) return;
-      const participants = new Set([
-        ...parsePairNames(rec.teamA).map(normKey),
-        ...parsePairNames(rec.teamB).map(normKey)
-      ]);
-      participants.forEach((key) => {
-        if (key && key !== "待定") {
-          playedCountMap.set(key, (playedCountMap.get(key) || 0) + 1);
-        }
+      const parsed = parseMatchScore(rec);
+      if (!rec || !parsed.hasScore) return;
+      const keysA = Array.from(new Set(parsePairNames(rec.teamA).map(normKey))).filter((k) => k && k !== "待定");
+      const keysB = Array.from(new Set(parsePairNames(rec.teamB).map(normKey))).filter((k) => k && k !== "待定");
+
+      const allKeys = new Set([...keysA, ...keysB]);
+      allKeys.forEach((key) => {
+        playedCountMap.set(key, (playedCountMap.get(key) || 0) + 1);
       });
+
+      if (parsed.winnerSide > 0) {
+        keysA.forEach((k) => winsCountMap.set(k, (winsCountMap.get(k) || 0) + 1));
+        keysB.forEach((k) => lossesCountMap.set(k, (lossesCountMap.get(k) || 0) + 1));
+      } else if (parsed.winnerSide < 0) {
+        keysB.forEach((k) => winsCountMap.set(k, (winsCountMap.get(k) || 0) + 1));
+        keysA.forEach((k) => lossesCountMap.set(k, (lossesCountMap.get(k) || 0) + 1));
+      }
     });
 
     const rawStandings = Array.isArray(activeStageCfg.standings) ? activeStageCfg.standings : [];
     standingsList = rawStandings.map((item, i) => {
       const name = item && item.name ? String(item.name).trim() : `选手 ${i + 1}`;
+      const key = normKey(name);
+
+      const autoWins = winsCountMap.get(key) || 0;
+      const autoLosses = lossesCountMap.get(key) || 0;
+      const autoPlayed = playedCountMap.get(key) || 0;
+
+      const rawWins = item && item.wins !== undefined && item.wins !== null ? Number(item.wins) : NaN;
+      const rawLosses = item && item.losses !== undefined && item.losses !== null ? Number(item.losses) : NaN;
+
+      const hasManualWL = Number.isFinite(rawWins) || Number.isFinite(rawLosses);
+      const manualW = Number.isFinite(rawWins) ? Math.max(0, Math.floor(rawWins)) : 0;
+      const manualL = Number.isFinite(rawLosses) ? Math.max(0, Math.floor(rawLosses)) : 0;
+
+      // Honor manual wins/losses when >= autoPlayed; auto-sync from matchRecords when new matches are added
+      const useAutoWL = !hasManualWL || autoPlayed > manualW + manualL;
+      const wins = useAutoWL ? autoWins : manualW;
+      const losses = useAutoWL ? autoLosses : manualL;
+
       const manualPlayed = item && item.played !== undefined && item.played !== null ? Number(item.played) : NaN;
       const played = Number.isFinite(manualPlayed)
         ? Math.max(0, Math.floor(manualPlayed))
-        : playedCountMap.get(normKey(name)) || 0;
+        : autoPlayed > 0
+        ? autoPlayed
+        : wins + losses;
 
       return {
         name,
+        wins,
+        losses,
         points: Number.isFinite(Number(item && item.points)) ? Number(item.points) : 0,
         goalDiff: Number.isFinite(Number(item && item.goalDiff)) ? Number(item.goalDiff) : 0,
         played
@@ -419,6 +450,26 @@
         tdPlayed.appendChild(emptySpan);
       }
 
+      const tdWl = document.createElement("td");
+      tdWl.className = "col-wl standings-wl-cell";
+      if (row.wins === 0 && row.losses === 0) {
+        const zeroSpan = document.createElement("span");
+        zeroSpan.className = "wl-zero";
+        zeroSpan.textContent = "0胜 0负";
+        tdWl.appendChild(zeroSpan);
+      } else {
+        const wlWrap = document.createElement("span");
+        wlWrap.className = "wl-record";
+        const wSpan = document.createElement("span");
+        wSpan.className = `wl-win${row.wins === 0 ? " is-zero" : ""}`;
+        wSpan.textContent = `${row.wins}胜`;
+        const lSpan = document.createElement("span");
+        lSpan.className = "wl-loss";
+        lSpan.textContent = `${row.losses}负`;
+        wlWrap.append(wSpan, lSpan);
+        tdWl.appendChild(wlWrap);
+      }
+
       const tdPts = document.createElement("td");
       tdPts.className = "col-pts standings-pts-cell";
       const ptsPill = document.createElement("span");
@@ -433,7 +484,7 @@
       }`;
       tdGd.textContent = gdFormatted;
 
-      tr.append(tdRank, tdName, tdPlayed, tdPts, tdGd);
+      tr.append(tdRank, tdName, tdPlayed, tdWl, tdPts, tdGd);
       tbody.appendChild(tr);
     });
   }
@@ -1038,8 +1089,8 @@
 
     if (isMemoriesView) {
       const mCfg = config.memories || {};
-      setText("bracket-eyebrow", mCfg.eyebrow || "CHERISHED MEMORIES · 第一届微度杯");
-      setText("bracket-main-title", mCfg.title || "那些挥拍与欢笑的瞬间");
+      setText("bracket-eyebrow", mCfg.eyebrow || "TOURNAMENT HIGHLIGHTS · 第一届微度杯");
+      setText("bracket-main-title", mCfg.title || "赛场精彩瞬间");
       document.querySelectorAll("[data-stage-tab]").forEach((b) => {
         b.classList.remove("is-active");
         b.setAttribute("aria-selected", "false");
@@ -1070,7 +1121,7 @@
   }
 
   // ==========================================================================
-  // CHERISHED MEMORIES GALLERY (Static Config + IndexedDB Upload + Lightbox)
+  // TOURNAMENT HIGHLIGHTS GALLERY (Pure Static Showcase + Cinema Lightbox)
   // ==========================================================================
   const memCfg = config.memories || {};
   if (memCfg.buttonLabel) setText("apple-memories-label", memCfg.buttonLabel);
@@ -1079,9 +1130,6 @@
   const memGridEl = document.getElementById("memories-grid");
   const memEmptyEl = document.getElementById("memories-empty");
   const memCountEl = document.getElementById("memories-count-pill");
-  const memUploadBtn = document.getElementById("memories-upload-btn");
-  const memFileInput = document.getElementById("memories-file-input");
-  const memDropzone = document.getElementById("memories-dropzone");
 
   const lightboxEl = document.getElementById("cup-lightbox-modal");
   const lightboxImg = document.getElementById("lightbox-img");
@@ -1092,116 +1140,8 @@
   const lightboxPrev = document.getElementById("lightbox-prev");
   const lightboxNext = document.getElementById("lightbox-next");
 
-  const DB_NAME = "weidu-cup-memories-db";
-  const STORE_NAME = "photos";
-  let localUploadedPhotos = [];
-  let combinedMemories = [];
+  let staticHighlights = [];
   let activeLightboxIdx = 0;
-
-  function openMemoriesDB() {
-    return new Promise((resolve, reject) => {
-      if (typeof indexedDB === "undefined") {
-        resolve(null);
-        return;
-      }
-      const req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, { keyPath: "id" });
-        }
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async function loadUploadedPhotosFromDB() {
-    try {
-      const db = await openMemoriesDB();
-      if (!db) return [];
-      return await new Promise((resolve) => {
-        const tx = db.transaction(STORE_NAME, "readonly");
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.getAll();
-        req.onsuccess = () => {
-          const items = Array.isArray(req.result) ? req.result : [];
-          items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          resolve(items);
-        };
-        req.onerror = () => resolve([]);
-      });
-    } catch {
-      return [];
-    }
-  }
-
-  async function savePhotoToDB(photoRecord) {
-    try {
-      const db = await openMemoriesDB();
-      if (!db) return;
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readwrite");
-        tx.objectStore(STORE_NAME).put(photoRecord);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch {
-      /* Ignore storage quota errors gracefully */
-    }
-  }
-
-  async function deletePhotoFromDB(id) {
-    try {
-      const db = await openMemoriesDB();
-      if (!db) return;
-      await new Promise((resolve) => {
-        const tx = db.transaction(STORE_NAME, "readwrite");
-        tx.objectStore(STORE_NAME).delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-      });
-    } catch {
-      /* Ignore */
-    }
-  }
-
-  function compressImageFile(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error("read error"));
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const maxSide = 1920;
-          let { width, height } = img;
-          if (width > maxSide || height > maxSide) {
-            const scale = maxSide / Math.max(width, height);
-            width = Math.round(width * scale);
-            height = Math.round(height * scale);
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
-          resolve(dataUrl);
-        };
-        img.onerror = () => resolve(String(reader.result));
-        img.src = String(reader.result);
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function formatTodayDotDate() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    return `${y}.${m}.${d}`;
-  }
 
   function getStaticMemories() {
     const raw = Array.isArray(memCfg.items) ? memCfg.items : [];
@@ -1210,21 +1150,25 @@
       .map((item, i) => ({
         id: `static-${i}`,
         src: item.src.trim(),
-        caption: item.caption ? String(item.caption).trim() : "美好瞬间",
-        date: item.date ? String(item.date).trim() : "",
-        isLocal: false
+        caption: item.caption ? String(item.caption).trim() : "精彩瞬间",
+        date: item.date ? String(item.date).trim() : ""
       }));
   }
 
   function renderMemoriesGallery() {
     if (!memGridEl || !memEmptyEl) return;
-    combinedMemories = [...getStaticMemories(), ...localUploadedPhotos];
+    staticHighlights = getStaticMemories();
 
     if (memCountEl) {
-      memCountEl.textContent = `已珍藏 ${combinedMemories.length} 张瞬间`;
+      if (staticHighlights.length > 0) {
+        memCountEl.hidden = false;
+        memCountEl.textContent = `共 ${staticHighlights.length} 张照片`;
+      } else {
+        memCountEl.hidden = true;
+      }
     }
 
-    if (!combinedMemories.length) {
+    if (!staticHighlights.length) {
       memEmptyEl.hidden = false;
       memGridEl.hidden = true;
       memGridEl.innerHTML = "";
@@ -1235,7 +1179,7 @@
     memGridEl.hidden = false;
     memGridEl.innerHTML = "";
 
-    combinedMemories.forEach((photo, idx) => {
+    staticHighlights.forEach((photo, idx) => {
       const card = document.createElement("figure");
       card.className = "memory-card";
       card.tabIndex = 0;
@@ -1254,51 +1198,15 @@
       img.className = "memory-photo";
       img.loading = "lazy";
       img.src = photo.src;
-      img.alt = photo.caption || "微度杯回忆照片";
+      img.alt = photo.caption || "微度杯精彩照片";
       wrap.appendChild(img);
-
-      if (photo.isLocal) {
-        const actions = document.createElement("div");
-        actions.className = "memory-card-actions";
-
-        const editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.className = "memory-action-btn";
-        editBtn.title = "修改照片寄语";
-        editBtn.setAttribute("aria-label", "修改照片寄语");
-        editBtn.textContent = "✎";
-        editBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          const nextText = window.prompt("为这张照片写一句寄语吧：", photo.caption || "");
-          if (nextText === null) return;
-          photo.caption = nextText.trim() || "美好瞬间";
-          await savePhotoToDB(photo);
-          renderMemoriesGallery();
-        });
-
-        const delBtn = document.createElement("button");
-        delBtn.type = "button";
-        delBtn.className = "memory-action-btn is-delete";
-        delBtn.title = "移除这张照片";
-        delBtn.setAttribute("aria-label", "移除这张照片");
-        delBtn.textContent = "×";
-        delBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          localUploadedPhotos = localUploadedPhotos.filter((p) => p.id !== photo.id);
-          await deletePhotoFromDB(photo.id);
-          renderMemoriesGallery();
-        });
-
-        actions.append(editBtn, delBtn);
-        wrap.appendChild(actions);
-      }
 
       const meta = document.createElement("figcaption");
       meta.className = "memory-meta";
 
       const cap = document.createElement("span");
       cap.className = "memory-caption";
-      cap.textContent = photo.caption || "美好瞬间";
+      cap.textContent = photo.caption || "精彩瞬间";
 
       const dt = document.createElement("span");
       dt.className = "memory-date";
@@ -1310,50 +1218,16 @@
     });
   }
 
-  async function handleFilesUpload(fileList) {
-    const files = Array.from(fileList || []).filter((f) => f && f.type && f.type.startsWith("image/"));
-    if (!files.length) return;
-
-    const todayStr = formatTodayDotDate();
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      try {
-        const src = await compressImageFile(file);
-        const baseName = String(file.name || "")
-          .replace(/\.[^.]+$/, "")
-          .replace(/[-_]+/g, " ")
-          .trim();
-        const defaultCaption =
-          baseName && !/^(IMG|DSC|Screenshot|mmexport|微信图片)/i.test(baseName)
-            ? baseName
-            : "微度杯美好瞬间";
-        const record = {
-          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          src,
-          caption: defaultCaption,
-          date: todayStr,
-          createdAt: Date.now() + i,
-          isLocal: true
-        };
-        localUploadedPhotos.unshift(record);
-        await savePhotoToDB(record);
-      } catch {
-        /* Skip unreadable image */
-      }
-    }
-    renderMemoriesGallery();
-  }
-
   function updateLightboxSlide() {
-    if (!lightboxEl || !combinedMemories.length) return;
-    const total = combinedMemories.length;
+    if (!lightboxEl || !staticHighlights.length) return;
+    const total = staticHighlights.length;
     activeLightboxIdx = ((activeLightboxIdx % total) + total) % total;
-    const item = combinedMemories[activeLightboxIdx];
+    const item = staticHighlights[activeLightboxIdx];
     if (lightboxImg) {
       lightboxImg.src = item.src;
-      lightboxImg.alt = item.caption || "微度杯回忆照片";
+      lightboxImg.alt = item.caption || "微度杯精彩照片";
     }
-    if (lightboxCaption) lightboxCaption.textContent = item.caption || "美好瞬间";
+    if (lightboxCaption) lightboxCaption.textContent = item.caption || "精彩瞬间";
     if (lightboxDate) lightboxDate.textContent = item.date || "";
     if (lightboxCounter) lightboxCounter.textContent = `${activeLightboxIdx + 1} / ${total}`;
     const showNav = total > 1;
@@ -1362,7 +1236,7 @@
   }
 
   function openLightbox(idx) {
-    if (!lightboxEl || !combinedMemories.length) return;
+    if (!lightboxEl || !staticHighlights.length) return;
     activeLightboxIdx = idx;
     updateLightboxSlide();
     lightboxEl.hidden = false;
@@ -1380,45 +1254,13 @@
       isMemoriesView = !isMemoriesView;
       if (history.replaceState) {
         const nextHash = isMemoriesView
-          ? "#memories"
+          ? "#highlights"
           : activeStageKey === "official"
           ? "#official"
           : "#preliminary";
         history.replaceState(null, "", nextHash);
       }
       initActiveMode();
-    });
-  }
-
-  if (memUploadBtn && memFileInput) {
-    memUploadBtn.addEventListener("click", () => memFileInput.click());
-    memFileInput.addEventListener("change", () => {
-      handleFilesUpload(memFileInput.files);
-      memFileInput.value = "";
-    });
-  }
-
-  if (memEmptyEl && memFileInput) {
-    memEmptyEl.addEventListener("click", () => memFileInput.click());
-  }
-
-  if (memDropzone) {
-    ["dragenter", "dragover"].forEach((evtName) => {
-      memDropzone.addEventListener(evtName, (e) => {
-        e.preventDefault();
-        memDropzone.classList.add("is-dragover");
-      });
-    });
-    ["dragleave", "drop"].forEach((evtName) => {
-      memDropzone.addEventListener(evtName, (e) => {
-        e.preventDefault();
-        memDropzone.classList.remove("is-dragover");
-      });
-    });
-    memDropzone.addEventListener("drop", (e) => {
-      if (e.dataTransfer && e.dataTransfer.files) {
-        handleFilesUpload(e.dataTransfer.files);
-      }
     });
   }
 
@@ -1442,11 +1284,6 @@
       if (e.target === lightboxEl) closeLightbox();
     });
   }
-
-  loadUploadedPhotosFromDB().then((items) => {
-    localUploadedPhotos = items;
-    if (isMemoriesView) renderMemoriesGallery();
-  });
 
   initActiveMode();
 

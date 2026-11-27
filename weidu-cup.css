@@ -504,7 +504,7 @@ button {
    ========================================================================== */
 .pyramid-workspace {
   display: grid;
-  grid-template-columns: minmax(340px, 396px) minmax(0, 1fr);
+  grid-template-columns: minmax(390px, 446px) minmax(0, 1fr);
   align-items: stretch;
   gap: clamp(18px, 2vw, 26px);
 }
@@ -575,23 +575,29 @@ button {
 }
 
 .standings-table .col-rank {
-  width: 38px;
+  width: 34px;
   text-align: center;
 }
 
 .standings-table .col-player {
   text-align: left;
-  width: 64px;
+  width: 60px;
 }
 
 .standings-table .col-played {
   text-align: left;
 }
 
+.standings-table .col-wl {
+  text-align: center;
+  width: 72px;
+  white-space: nowrap;
+}
+
 .standings-table .col-pts,
 .standings-table .col-gd {
   text-align: right;
-  width: 68px;
+  width: 62px;
 }
 
 .standings-row {
@@ -685,6 +691,40 @@ body[data-apple-theme="dark"] .played-dot {
   color: var(--ink-tertiary);
   font-size: 0.8rem;
   user-select: none;
+}
+
+.standings-wl-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wl-record {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+}
+
+.wl-win {
+  color: var(--ink-primary);
+  font-weight: 600;
+}
+
+.wl-win.is-zero {
+  color: var(--ink-secondary);
+  font-weight: 500;
+}
+
+.wl-loss {
+  color: var(--ink-secondary);
+  font-weight: 500;
+}
+
+.wl-zero {
+  color: var(--ink-tertiary);
+  font-size: 0.8rem;
 }
 
 .standings-pts-cell {
@@ -1641,11 +1681,6 @@ body.is-highlighting-player .bracket-connector.is-path-focus {
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.memories-surface.is-dragover {
-  border-color: var(--accent-gold-border);
-  background: color-mix(in srgb, var(--accent-gold-soft) 35%, var(--bg-surface));
-}
-
 .memories-toolbar {
   display: flex;
   align-items: center;
@@ -1680,42 +1715,17 @@ body.is-highlighting-player .bracket-connector.is-path-focus {
   color: var(--ink-secondary);
 }
 
-.memories-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 980px;
-  border: 0;
-  background: var(--accent-blue);
-  color: #ffffff;
-  font-size: 0.84rem;
-  font-weight: 600;
-  transition: filter 0.18s ease, transform 0.18s ease;
-}
-
-.memories-upload-btn:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-
 .memories-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: clamp(48px, 7vw, 84px) 20px;
-  border: 1.5px dashed var(--line-card);
+  padding: clamp(52px, 7vw, 88px) 20px;
+  border: 1px solid var(--line-hairline);
   border-radius: 22px;
   background: var(--bg-subtle);
   gap: 10px;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-}
-
-.memories-empty:hover {
-  border-color: var(--accent-gold-border);
 }
 
 .memories-empty-icon {
