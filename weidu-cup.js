@@ -23,7 +23,9 @@
   const mainEl = document.getElementById("apple-main");
   const viewPyramidEl = document.getElementById("view-pyramid");
   const viewSymmetricEl = document.getElementById("view-symmetric");
+  const viewMemoriesEl = document.getElementById("view-memories");
   const symmetricZoneTabsEl = document.getElementById("symmetric-zone-tabs");
+  const memoriesToggleBtn = document.getElementById("apple-memories-toggle");
 
   const setText = (id, text) => {
     const el = document.getElementById(id);
@@ -283,7 +285,9 @@
   // DATA BUILDER 1: PYRAMID + PERSONAL STANDINGS (Supports 预备赛 & 正式赛)
   // ==========================================================================
   const stageTabsEl = document.getElementById("tournament-stage-tabs");
-  const initialHashStage = window.location.hash === "#official" ? "official" : window.location.hash === "#preliminary" ? "preliminary" : null;
+  const initialHash = window.location.hash;
+  let isMemoriesView = initialHash === "#memories";
+  const initialHashStage = initialHash === "#official" ? "official" : initialHash === "#preliminary" ? "preliminary" : null;
   let activeStageKey =
     initialHashStage || (config.defaultStage === "official" ? "official" : "preliminary");
 
@@ -302,12 +306,37 @@
     const stageEyebrow = activeStageCfg.eyebrow || config.eyebrow || "WEIDU CUP · TOURNAMENT";
     setText("bracket-eyebrow", stageEyebrow);
 
+    // Auto-count completed matches per player from matchRecords
+    const playedCountMap = new Map();
+    const rawStageRecords = Array.isArray(activeStageCfg.matchRecords) ? activeStageCfg.matchRecords : [];
+    rawStageRecords.forEach((rec) => {
+      if (!rec || !parseMatchScore(rec).hasScore) return;
+      const participants = new Set([
+        ...parsePairNames(rec.teamA).map(normKey),
+        ...parsePairNames(rec.teamB).map(normKey)
+      ]);
+      participants.forEach((key) => {
+        if (key && key !== "待定") {
+          playedCountMap.set(key, (playedCountMap.get(key) || 0) + 1);
+        }
+      });
+    });
+
     const rawStandings = Array.isArray(activeStageCfg.standings) ? activeStageCfg.standings : [];
-    standingsList = rawStandings.map((item, i) => ({
-      name: item && item.name ? String(item.name).trim() : `选手 ${i + 1}`,
-      points: Number.isFinite(Number(item && item.points)) ? Number(item.points) : 0,
-      goalDiff: Number.isFinite(Number(item && item.goalDiff)) ? Number(item.goalDiff) : 0
-    }));
+    standingsList = rawStandings.map((item, i) => {
+      const name = item && item.name ? String(item.name).trim() : `选手 ${i + 1}`;
+      const manualPlayed = item && item.played !== undefined && item.played !== null ? Number(item.played) : NaN;
+      const played = Number.isFinite(manualPlayed)
+        ? Math.max(0, Math.floor(manualPlayed))
+        : playedCountMap.get(normKey(name)) || 0;
+
+      return {
+        name,
+        points: Number.isFinite(Number(item && item.points)) ? Number(item.points) : 0,
+        goalDiff: Number.isFinite(Number(item && item.goalDiff)) ? Number(item.goalDiff) : 0,
+        played
+      };
+    });
 
     if (activeStageCfg.autoSortStandings !== false) {
       standingsList.sort((a, b) => {
@@ -369,6 +398,27 @@
       tdName.className = "col-player standings-player-name";
       tdName.appendChild(buildAlignedNameNode(row.name));
 
+      const tdPlayed = document.createElement("td");
+      tdPlayed.className = "col-played standings-played-cell";
+      tdPlayed.title = `已参赛 ${row.played} 局`;
+      tdPlayed.setAttribute("aria-label", `已参赛 ${row.played} 局`);
+      if (row.played > 0) {
+        const dotsWrap = document.createElement("span");
+        dotsWrap.className = "played-dots";
+        for (let d = 0; d < row.played; d++) {
+          const dot = document.createElement("span");
+          dot.className = "played-dot";
+          dot.setAttribute("aria-hidden", "true");
+          dotsWrap.appendChild(dot);
+        }
+        tdPlayed.appendChild(dotsWrap);
+      } else {
+        const emptySpan = document.createElement("span");
+        emptySpan.className = "played-empty";
+        emptySpan.textContent = "—";
+        tdPlayed.appendChild(emptySpan);
+      }
+
       const tdPts = document.createElement("td");
       tdPts.className = "col-pts standings-pts-cell";
       const ptsPill = document.createElement("span");
@@ -383,7 +433,7 @@
       }`;
       tdGd.textContent = gdFormatted;
 
-      tr.append(tdRank, tdName, tdPts, tdGd);
+      tr.append(tdRank, tdName, tdPlayed, tdPts, tdGd);
       tbody.appendChild(tr);
     });
   }
@@ -970,13 +1020,35 @@
 
   function initActiveMode() {
     clearHighlight();
-    if (mainEl) mainEl.dataset.activeLayout = activeLayout;
+    if (mainEl) mainEl.dataset.activeLayout = isMemoriesView ? "memories" : activeLayout;
 
-    const isPyramid = activeLayout === "pyramid";
+    const isPyramid = !isMemoriesView && activeLayout === "pyramid";
+    const isSymmetric = !isMemoriesView && activeLayout === "bracket";
+
     if (viewPyramidEl) viewPyramidEl.hidden = !isPyramid;
-    if (viewSymmetricEl) viewSymmetricEl.hidden = isPyramid;
-    if (symmetricZoneTabsEl) symmetricZoneTabsEl.hidden = isPyramid;
-    if (stageTabsEl) stageTabsEl.hidden = !isPyramid;
+    if (viewSymmetricEl) viewSymmetricEl.hidden = !isSymmetric;
+    if (viewMemoriesEl) viewMemoriesEl.hidden = !isMemoriesView;
+    if (symmetricZoneTabsEl) symmetricZoneTabsEl.hidden = !isSymmetric;
+    if (stageTabsEl) stageTabsEl.hidden = activeLayout !== "pyramid";
+
+    if (memoriesToggleBtn) {
+      memoriesToggleBtn.classList.toggle("is-active", isMemoriesView);
+      memoriesToggleBtn.setAttribute("aria-pressed", String(isMemoriesView));
+    }
+
+    if (isMemoriesView) {
+      const mCfg = config.memories || {};
+      setText("bracket-eyebrow", mCfg.eyebrow || "CHERISHED MEMORIES · 第一届微度杯");
+      setText("bracket-main-title", mCfg.title || "那些挥拍与欢笑的瞬间");
+      document.querySelectorAll("[data-stage-tab]").forEach((b) => {
+        b.classList.remove("is-active");
+        b.setAttribute("aria-selected", "false");
+      });
+      renderMemoriesGallery();
+      return;
+    }
+
+    setText("bracket-main-title", config.title || "第一届微度杯");
 
     if (isPyramid) {
       buildPyramidStageData(activeStageKey);
@@ -989,6 +1061,7 @@
       renderPyramidBracket();
       renderMatchRecords();
     } else {
+      setText("bracket-eyebrow", config.eyebrow || "WEIDU CUP · TOURNAMENT");
       renderSymmetricBracket();
     }
 
@@ -996,13 +1069,393 @@
     scheduleRedraw();
   }
 
+  // ==========================================================================
+  // CHERISHED MEMORIES GALLERY (Static Config + IndexedDB Upload + Lightbox)
+  // ==========================================================================
+  const memCfg = config.memories || {};
+  if (memCfg.buttonLabel) setText("apple-memories-label", memCfg.buttonLabel);
+  if (memCfg.subtitle) setText("memories-subtitle", memCfg.subtitle);
+
+  const memGridEl = document.getElementById("memories-grid");
+  const memEmptyEl = document.getElementById("memories-empty");
+  const memCountEl = document.getElementById("memories-count-pill");
+  const memUploadBtn = document.getElementById("memories-upload-btn");
+  const memFileInput = document.getElementById("memories-file-input");
+  const memDropzone = document.getElementById("memories-dropzone");
+
+  const lightboxEl = document.getElementById("cup-lightbox-modal");
+  const lightboxImg = document.getElementById("lightbox-img");
+  const lightboxCaption = document.getElementById("lightbox-caption");
+  const lightboxDate = document.getElementById("lightbox-date");
+  const lightboxCounter = document.getElementById("lightbox-counter");
+  const lightboxClose = document.getElementById("lightbox-close");
+  const lightboxPrev = document.getElementById("lightbox-prev");
+  const lightboxNext = document.getElementById("lightbox-next");
+
+  const DB_NAME = "weidu-cup-memories-db";
+  const STORE_NAME = "photos";
+  let localUploadedPhotos = [];
+  let combinedMemories = [];
+  let activeLightboxIdx = 0;
+
+  function openMemoriesDB() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === "undefined") {
+        resolve(null);
+        return;
+      }
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: "id" });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function loadUploadedPhotosFromDB() {
+    try {
+      const db = await openMemoriesDB();
+      if (!db) return [];
+      return await new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const items = Array.isArray(req.result) ? req.result : [];
+          items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          resolve(items);
+        };
+        req.onerror = () => resolve([]);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async function savePhotoToDB(photoRecord) {
+    try {
+      const db = await openMemoriesDB();
+      if (!db) return;
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).put(photoRecord);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch {
+      /* Ignore storage quota errors gracefully */
+    }
+  }
+
+  async function deletePhotoFromDB(id) {
+    try {
+      const db = await openMemoriesDB();
+      if (!db) return;
+      await new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    } catch {
+      /* Ignore */
+    }
+  }
+
+  function compressImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("read error"));
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const maxSide = 1920;
+          let { width, height } = img;
+          if (width > maxSide || height > maxSide) {
+            const scale = maxSide / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+          resolve(dataUrl);
+        };
+        img.onerror = () => resolve(String(reader.result));
+        img.src = String(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function formatTodayDotDate() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}.${m}.${d}`;
+  }
+
+  function getStaticMemories() {
+    const raw = Array.isArray(memCfg.items) ? memCfg.items : [];
+    return raw
+      .filter((item) => item && typeof item.src === "string" && item.src.trim())
+      .map((item, i) => ({
+        id: `static-${i}`,
+        src: item.src.trim(),
+        caption: item.caption ? String(item.caption).trim() : "美好瞬间",
+        date: item.date ? String(item.date).trim() : "",
+        isLocal: false
+      }));
+  }
+
+  function renderMemoriesGallery() {
+    if (!memGridEl || !memEmptyEl) return;
+    combinedMemories = [...getStaticMemories(), ...localUploadedPhotos];
+
+    if (memCountEl) {
+      memCountEl.textContent = `已珍藏 ${combinedMemories.length} 张瞬间`;
+    }
+
+    if (!combinedMemories.length) {
+      memEmptyEl.hidden = false;
+      memGridEl.hidden = true;
+      memGridEl.innerHTML = "";
+      return;
+    }
+
+    memEmptyEl.hidden = true;
+    memGridEl.hidden = false;
+    memGridEl.innerHTML = "";
+
+    combinedMemories.forEach((photo, idx) => {
+      const card = document.createElement("figure");
+      card.className = "memory-card";
+      card.tabIndex = 0;
+      card.addEventListener("click", () => openLightbox(idx));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openLightbox(idx);
+        }
+      });
+
+      const wrap = document.createElement("div");
+      wrap.className = "memory-photo-wrap";
+
+      const img = document.createElement("img");
+      img.className = "memory-photo";
+      img.loading = "lazy";
+      img.src = photo.src;
+      img.alt = photo.caption || "微度杯回忆照片";
+      wrap.appendChild(img);
+
+      if (photo.isLocal) {
+        const actions = document.createElement("div");
+        actions.className = "memory-card-actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "memory-action-btn";
+        editBtn.title = "修改照片寄语";
+        editBtn.setAttribute("aria-label", "修改照片寄语");
+        editBtn.textContent = "✎";
+        editBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const nextText = window.prompt("为这张照片写一句寄语吧：", photo.caption || "");
+          if (nextText === null) return;
+          photo.caption = nextText.trim() || "美好瞬间";
+          await savePhotoToDB(photo);
+          renderMemoriesGallery();
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "memory-action-btn is-delete";
+        delBtn.title = "移除这张照片";
+        delBtn.setAttribute("aria-label", "移除这张照片");
+        delBtn.textContent = "×";
+        delBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          localUploadedPhotos = localUploadedPhotos.filter((p) => p.id !== photo.id);
+          await deletePhotoFromDB(photo.id);
+          renderMemoriesGallery();
+        });
+
+        actions.append(editBtn, delBtn);
+        wrap.appendChild(actions);
+      }
+
+      const meta = document.createElement("figcaption");
+      meta.className = "memory-meta";
+
+      const cap = document.createElement("span");
+      cap.className = "memory-caption";
+      cap.textContent = photo.caption || "美好瞬间";
+
+      const dt = document.createElement("span");
+      dt.className = "memory-date";
+      dt.textContent = photo.date || "";
+
+      meta.append(cap, dt);
+      card.append(wrap, meta);
+      memGridEl.appendChild(card);
+    });
+  }
+
+  async function handleFilesUpload(fileList) {
+    const files = Array.from(fileList || []).filter((f) => f && f.type && f.type.startsWith("image/"));
+    if (!files.length) return;
+
+    const todayStr = formatTodayDotDate();
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const src = await compressImageFile(file);
+        const baseName = String(file.name || "")
+          .replace(/\.[^.]+$/, "")
+          .replace(/[-_]+/g, " ")
+          .trim();
+        const defaultCaption =
+          baseName && !/^(IMG|DSC|Screenshot|mmexport|微信图片)/i.test(baseName)
+            ? baseName
+            : "微度杯美好瞬间";
+        const record = {
+          id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          src,
+          caption: defaultCaption,
+          date: todayStr,
+          createdAt: Date.now() + i,
+          isLocal: true
+        };
+        localUploadedPhotos.unshift(record);
+        await savePhotoToDB(record);
+      } catch {
+        /* Skip unreadable image */
+      }
+    }
+    renderMemoriesGallery();
+  }
+
+  function updateLightboxSlide() {
+    if (!lightboxEl || !combinedMemories.length) return;
+    const total = combinedMemories.length;
+    activeLightboxIdx = ((activeLightboxIdx % total) + total) % total;
+    const item = combinedMemories[activeLightboxIdx];
+    if (lightboxImg) {
+      lightboxImg.src = item.src;
+      lightboxImg.alt = item.caption || "微度杯回忆照片";
+    }
+    if (lightboxCaption) lightboxCaption.textContent = item.caption || "美好瞬间";
+    if (lightboxDate) lightboxDate.textContent = item.date || "";
+    if (lightboxCounter) lightboxCounter.textContent = `${activeLightboxIdx + 1} / ${total}`;
+    const showNav = total > 1;
+    if (lightboxPrev) lightboxPrev.hidden = !showNav;
+    if (lightboxNext) lightboxNext.hidden = !showNav;
+  }
+
+  function openLightbox(idx) {
+    if (!lightboxEl || !combinedMemories.length) return;
+    activeLightboxIdx = idx;
+    updateLightboxSlide();
+    lightboxEl.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeLightbox() {
+    if (!lightboxEl || lightboxEl.hidden) return;
+    lightboxEl.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  if (memoriesToggleBtn) {
+    memoriesToggleBtn.addEventListener("click", () => {
+      isMemoriesView = !isMemoriesView;
+      if (history.replaceState) {
+        const nextHash = isMemoriesView
+          ? "#memories"
+          : activeStageKey === "official"
+          ? "#official"
+          : "#preliminary";
+        history.replaceState(null, "", nextHash);
+      }
+      initActiveMode();
+    });
+  }
+
+  if (memUploadBtn && memFileInput) {
+    memUploadBtn.addEventListener("click", () => memFileInput.click());
+    memFileInput.addEventListener("change", () => {
+      handleFilesUpload(memFileInput.files);
+      memFileInput.value = "";
+    });
+  }
+
+  if (memEmptyEl && memFileInput) {
+    memEmptyEl.addEventListener("click", () => memFileInput.click());
+  }
+
+  if (memDropzone) {
+    ["dragenter", "dragover"].forEach((evtName) => {
+      memDropzone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        memDropzone.classList.add("is-dragover");
+      });
+    });
+    ["dragleave", "drop"].forEach((evtName) => {
+      memDropzone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        memDropzone.classList.remove("is-dragover");
+      });
+    });
+    memDropzone.addEventListener("drop", (e) => {
+      if (e.dataTransfer && e.dataTransfer.files) {
+        handleFilesUpload(e.dataTransfer.files);
+      }
+    });
+  }
+
+  if (lightboxClose) lightboxClose.addEventListener("click", closeLightbox);
+  if (lightboxPrev) {
+    lightboxPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      activeLightboxIdx -= 1;
+      updateLightboxSlide();
+    });
+  }
+  if (lightboxNext) {
+    lightboxNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      activeLightboxIdx += 1;
+      updateLightboxSlide();
+    });
+  }
+  if (lightboxEl) {
+    lightboxEl.addEventListener("click", (e) => {
+      if (e.target === lightboxEl) closeLightbox();
+    });
+  }
+
+  loadUploadedPhotosFromDB().then((items) => {
+    localUploadedPhotos = items;
+    if (isMemoriesView) renderMemoriesGallery();
+  });
+
   initActiveMode();
 
   // Preliminary / Official stage switcher tabs (in top-left navbar beside 第一届微度杯)
   document.querySelectorAll("[data-stage-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const nextStage = btn.dataset.stageTab === "official" ? "official" : "preliminary";
-      if (nextStage === activeStageKey) return;
+      if (!isMemoriesView && nextStage === activeStageKey) return;
+      isMemoriesView = false;
       activeStageKey = nextStage;
       if (history.replaceState) {
         history.replaceState(null, "", nextStage === "official" ? "#official" : "#preliminary");
@@ -1096,6 +1549,17 @@
     });
   }
   document.addEventListener("keydown", (e) => {
+    if (lightboxEl && !lightboxEl.hidden) {
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "ArrowLeft") {
+        activeLightboxIdx -= 1;
+        updateLightboxSlide();
+      } else if (e.key === "ArrowRight") {
+        activeLightboxIdx += 1;
+        updateLightboxSlide();
+      }
+      return;
+    }
     if (e.key === "Escape" && rulesModal && !rulesModal.hidden) {
       closeRulesModal();
     }

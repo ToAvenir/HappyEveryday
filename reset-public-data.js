@@ -1,8 +1,16 @@
 const resetPublicData = {
-  "checkedThrough": "2026-11-25",
+  "checkedThrough": "2026-11-27",
   "announcements": [],
   "events": {
     "codex": [
+      {
+        "date": "2026-11-26",
+        "kind": "grant",
+        "detail": "团队公布了可兑换的额度重置卡。",
+        "source": "OpenAI 团队原帖",
+        "url": "https://x.com/thsottiaux/status/2125853628250599730",
+        "addedAt": "2026-11-26T23:59:22+00:00"
+      },
       {
         "date": "2026-11-25",
         "announcedAt": "2026-11-24T18:43:21Z",
@@ -519,6 +527,14 @@ const resetPublicData = {
       }
     ],
     "antigravity": [
+      {
+        "date": "2026-11-26",
+        "kind": "direct",
+        "detail": "团队公开确认执行了额度重置。",
+        "source": "Google 团队原帖",
+        "url": "https://x.com/_mohansolo/status/2125851902009311306",
+        "addedAt": "2026-11-26T23:59:22+00:00"
+      },
       {
         "date": "2026-11-24",
         "kind": "direct",
